@@ -19,11 +19,13 @@ LayeredSimulationByReplacement <- function(baseSim, baseAssumedColors, baseAssum
   #     GrayArea          <-   logical conjunction of gray area indicators from all layers
   ALLgrey<- baseAssumedColors=="grey"
   RESexpr<- baseSim
+  colors_final<- baseAssumedColors
   withinHierarchy<- vector(mode="list", length=length(withinAssumedColors))
   for (i in seq_along(withinAssumedColors))
       { ALLgrey<- (ALLgrey & (withinAssumedColors[[i]]=="grey") ) 
         RESexpr[,withinAssumedColors[[i]]!="grey"]= withinSims[[i]][,withinAssumedColors[[i]]!="grey"]
         #^ take non-grey modules from withinSims, put in resulting simulation at their placement
+        colors_final[withinAssumedColors[[i]]!="grey"]=paste0(withinAssumedColors[[i]][withinAssumedColors[[i]]!="grey"],i)
         withinHierarchy[[i]]<- list(color_labels= withinAssumedColors[[i]], MEs= withinAssumedMEs[[i]])
       }
   hierarchy=c(list(list(color_labels=baseAssumedColors, MEs= baseAssumedMEs)), withinHierarchy)
@@ -31,7 +33,8 @@ LayeredSimulationByReplacement <- function(baseSim, baseAssumedColors, baseAssum
   return( list( 
                 expr_data=RESexpr,
                 hierarchy=hierarchy,
-                GrayArea=ALLgrey
+                GrayArea=ALLgrey,
+                colors_final=colors_final
               )
         )
 }
