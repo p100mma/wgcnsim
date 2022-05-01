@@ -1,4 +1,11 @@
 
+powerEstimation <-function(corMatrix, Rcut=0.85, powers=c(1:8), hist_breaks=10){
+   pickSoftThreshold.fromSimilarity(
+  similarity=abs(corMatrix),
+  RsquaredCut=Rcut,
+  powerVector=c(1:8),
+  nBreaks=hist_breaks)
+}
 
 dissTOM2dendro <- function (distance_matrix, method="average"){
 hclust(distance_matrix, method = method)
