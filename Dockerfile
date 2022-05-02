@@ -11,6 +11,8 @@ RUN install2.r --error --skipinstalled --ncpus -1 \
 	 fastcluster \
  	 dynamicTreeCut \
  	 survival \
+         matrixcalc \
+         MASS \
  	 BiocManager 
 
 
