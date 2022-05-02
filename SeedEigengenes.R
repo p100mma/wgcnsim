@@ -46,17 +46,35 @@ CloneLayeredHierarchy<- function(ref_layered, eigen_method_cor='pearson')
     return(clone)
 }
 
-CloneLayered<- function(ref_layered, cormat, true_grey_frac=0.5, eigen_method_cor='pearson')
+CloneLayered<- function(ref_layered, ref_sim_argsList, eigen_method_cor='pearson', verbose=0,other_ref_simargsList=NULL)
 {
-  neg_cor_prop <- cor2sim_neg_cor_prop(cormat)
-  MEnames <- names(MEs)
-  colornames<- sub(".*ME", "", MEnames)
-  colornames<- colornames[ colornames!="grey"]     #skip grey module (independent genes)
-  mod_props<- colors2props(color_labels, colornames, true_grey_frac)
-  
-final_args<- list(eigengenes= MEs[names(MEs)!="MEgrey"], nGenes=ncol(ref_layered$expr_data), 
-                    modProportions=mod_props,
-                    minCor=cor_par_list$min_cor, maxCor=cor_par_list$max_cor,
-                    propNegativeCor=neg_cor_prop,
-                    geneMeans=gmeans)
+    
+    if (is.null(names(ref_sim_argsList))) stop("names of ref_sim_argsList must not be NULL")
+    if (sum(names(ref_sim_argsList)!=names(ref_layered$hierarchy))>0) stop("names of ref_sim_argsList must be names of ref_layered$hierarchy")
+    
+    ClonedHier<- CloneLayeredHierarchy(ref_layered, eigen_method_cor)
+    MergedResult=list(expr_data='foo',
+                      hierarchy=ClonedHier,
+                      GrayArea=ref_layered$GrayArea,
+                      colors_final=ref_layered$colors_final)
+    layer_counter=1
+    for (layer in names(ref_sim_argsList))
+    {
+    other_args_=NULL
+    if (!is.null(other_ref_simargsList)) other_args_=other_ref_simargsList[[layer]]
+    args_<- ref_sim_argsList[[layer]]
+    args_$eigengenes= ClonedHier[[layer]]$MEs
+    if (layer_counter==1)
+    { SIMRES=simulateDatExpr_fromInput(args_, verbose=verbose, other_named_args=other_args_)
+      AdjSIMRES<- ReorderSimByReal(SIMRES$sim_result, list(color_labels=ClonedHier[[layer]]$color_labels) )
+      MergedResult$expr_data<-AdjSIMRES$datExpr
+    }
+    else{
+        temp_sim=simulateDatExpr_fromInput(args_, verbose=verbose, other_named_args=other_args_)
+         AdjSIMRES<- ReorderSimByReal(temp_sim$sim_result, list(color_labels=ClonedHier[[layer]]$color_labels) )
+        MergedResult$expr_data[,ClonedHier[[layer]]$color_labels!="grey"]=AdjSIMRES$datExpr[,ClonedHier[[layer]]$color_labels!="grey"]
+        }
+    layer_counter= layer_counter+1
+    }
+    return(MergedResult) 
 }
