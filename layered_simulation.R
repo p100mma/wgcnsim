@@ -182,7 +182,7 @@ Layered2Submodules <- function(layered_simulation,  neg_cor_prop, base_sim_name=
 
 layered_simulation$grayed<-RandomGreyModules(layered_simulation$GrayArea, layered_simulation$expr_data,
                              neg_cor_prop,
-                             GrMAX_COR,GrMIN_COR, GrMaxSubmoduleSize=5, Grcorpower=1,
+                             GrMAX_COR,GrMIN_COR, GrMaxSubmoduleSize, Grcorpower,
                              GrsizeProbs) 
 layered_simulation$submods<-RandomSmallSubModules(layered_simulation$hierarchy[[base_sim_name]]$color_labels,
                                                  layered_simulation$grayed, neg_cor_prop,
