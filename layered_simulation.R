@@ -195,6 +195,18 @@ return(layered_simulation)
 
 
 }
+
+
+CompareClusteringAndLayered<- function(clust_result,layered_sim,
+side="simulation", main="sim vs base clusterings",...)
+{
+plotDendroAndColors(clust_result$geneTree, 
+as.data.frame(c(list(clust_result$color_labels),
+  lapply(layered_sim$hierarchy, function(x) x$color_labels))),c(side,names(layered_sim$hierarchy)), dendroLabels=FALSE, main=main, ...)
+
+}
+
+
 # depends on the igraph library sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize)
 #
 # TestRandomSmallSubModules <- function(base_color_labels, sim_expr_data, neg_cor_prop,
