@@ -172,7 +172,30 @@ RandomSmallSubModules<- function(base_color_labels, sim_expr_data, neg_cor_prop,
     }}
     return(sim_expr_data)
   }
-# depends on the igraph library
+
+
+Layered2Submodules <- function(layered_simulation,  neg_cor_prop, base_sim_name='base',
+                               GrMAX_COR=0.75, GrMIN_COR=0, GrMaxSubmoduleSize=5, Grcorpower=1,
+                               GrsizeProbs=rep( 1/GrMaxSubmoduleSize,GrMaxSubmoduleSize),
+                                ModMAX_COR=0.625, ModMIN_COR=0.375, ModMaxSubmoduleSize=40,
+                                ModsizeProbs=rep( 1/ModMaxSubmoduleSize,ModMaxSubmoduleSize)){
+
+layered_simulation$grayed<-RandomGreyModules(layered_simulation$GrayArea, layered_simulation$expr_data,
+                             neg_cor_prop,
+                             GrMAX_COR,GrMIN_COR, GrMaxSubmoduleSize=5, Grcorpower=1,
+                             GrsizeProbs) 
+layered_simulation$submods<-RandomSmallSubModules(layered_simulation$hierarchy[[base_sim_name]]$color_labels,
+                                                 layered_simulation$grayed, neg_cor_prop,
+                                                 ModMAX_COR, ModMIN_COR, ModMaxSubmoduleSize,
+                                                 ModsizeProbs)
+return(layered_simulation)
+    
+
+
+
+
+}
+# depends on the igraph library sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize)
 #
 # TestRandomSmallSubModules <- function(base_color_labels, sim_expr_data, neg_cor_prop,
 #                                       MaxSubmoduleSizes, sizeProbsList,MAX_CORs, MIN_CORs,
