@@ -6,8 +6,8 @@ RUN install2.r --error --skipinstalled --ncpus -1 \
     matrixStats \
     Hmisc \
     splines \
-	 foreach \
-	 doParallel \
+	  foreach \
+	  doParallel \
 	 fastcluster \
  	 dynamicTreeCut \
  	 survival \
