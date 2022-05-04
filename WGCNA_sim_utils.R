@@ -127,7 +127,7 @@ BaseClustering2SavedSim<- function(new_sim_name,
                            method_cor='spearman', #for adjaceny matrix
                            verbose=0, other_named_args=NULL,#simulateDatExpr_fromInput
                            min_from_perm=FALSE, abs_cor=TRUE, true_grey_frac=0.5, #clust_res2simDEargs
- ,...#clust_res2simDEargs
+ ...#clust_res2simDEargs
     ){
     clres<- DoClusterFromFilenameArgs(datasets_path, base_dataset_name, base_network_name, base_clustering_name, method_cor, base_expr_data, base_expr_data_path, base_has_decision, base_expr_RData, calculateMEs=TRUE)
 if (is.null(base_expr_data)){ if (is.null(base_expr_data_path)) stop('expr_data or expr_data_path must not be null') 
@@ -136,7 +136,7 @@ if (is.null(base_expr_data)){ if (is.null(base_expr_data_path)) stop('expr_data 
                         }
 if (base_has_decision) base_expr_data<- base_expr_data[,-1]
 C<- cor(base_expr_data, method=method_cor)
-  input_args_list= clust_res2simDEargs(base_expr_data, clres$color_labels, C, clres$ME_list$MEs, min_from_perm, abs_cor, true_grey_frac, save_steps=FALSE, save_final=FALSE, ...) 
+  input_args_list= clust_res2simDEargs(base_expr_data, clres$color_labels, C, clres$ME_data$eigengenes, min_from_perm, abs_cor, true_grey_frac, save_steps=FALSE, save_final=FALSE, ...) 
  simul<-simulateDatExpr_fromInput(input_args_list, verbose, other_named_args)
  if (ReorderByReal)
     s_result<-ReorderSimByReal(simul$sim_result, clres) 
@@ -168,7 +168,7 @@ if (is.null(base_expr_data)){ if (is.null(base_expr_data_path)) stop('expr_data 
                             }
 if (base_has_decision) base_expr_data<- base_expr_data[,-1]
 C<- cor(base_expr_data, method=method_cor)
-  input_args_list= clust_res2simDEargs(base_expr_data, clres$color_labels, C, clres$ME_list$MEs, specs$min_from_perm, specs$abs_cor, specs$true_grey_frac, save_steps=FALSE, save_final=FALSE, ...) 
+  input_args_list= clust_res2simDEargs(base_expr_data, clres$color_labels, C, clres$ME_data$eigengenes, specs$min_from_perm, specs$abs_cor, specs$true_grey_frac, save_steps=FALSE, save_final=FALSE, ...) 
  if (is.null(specs$other_named_args))
  simul<-simulateDatExpr_fromInput(input_args_list, verbose)
  else
