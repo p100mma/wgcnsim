@@ -39,6 +39,90 @@ LayeredSimulationByReplacement <- function(baseSim, baseAssumedColors, baseAssum
         )
 }
 
+SimSpecs2Hierarchy<- function( BaseSimSpec, WithinSimSpecs,
+                             datasets_path,
+                     base_expr_data_path=NULL, base_expr_data=NULL,
+                     base_has_decision=FALSE, base_expr_RData=TRUE, method_cor='spearman', verbose=0){
+   Hierarchy<- vector(mode='list', length=(length(WithinSimSpecs)+1))
+   names(Hierarchy) <- c('base', paste0('within', seq_along(WithinSimSpecs)))
+tempClres<-DoClusterFromFilenameArgs(datasets_path, BaseSimSpec$base_dataset_name, BaseSimSpec$base_network_name,BaseSimSpec$base_clustering_name, method_cor,
+                             base_expr_data, base_expr_data_path, base_has_decision, base_expr_RData, 
+calculateMEs=TRUE)
+   Hierarchy$base<- list(color_labels=tempClres$color_labels, MEs=tempClres$ME_data$eigengenes, base_sim_specs=BaseSimSpec)
+   for (i in seq_along(WithinSimSpecs)){    
+    tempClres<-DoClusterFromFilenameArgs(datasets_path, WithinSimSpecs[[i]]$base_dataset_name, WithinSimSpecs[[i]]$base_network_name,WithinSimSpecs[[i]]$base_clustering_name, method_cor,
+                             base_expr_data, base_expr_data_path, base_has_decision, base_expr_RData, 
+calculateMEs=TRUE)
+        Hierarchy[[paste0('within',i)]]<- list(color_labels=tempClres$color_labels, MEs=tempClres$ME_data$eigengenes, base_sim_specs=WithinSimSpecs[[i]])
+}
+return(Hierarchy)
+}
+
+SpecsFiles2Hierarchy<- function(BaseSimName, WithinSimNamesList, datasets_path, dataset_name,
+                           base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
+                           base_has_decision=FALSE, base_expr_RData=TRUE,
+                           method_cor='spearman',verbose=0) 
+{
+    BaseSimSpec<- ReadSimSpecsFile(BaseSimName, datasets_path, dataset_name)
+    WithinSimSpecs<- lapply(WithinSimNamesList, ReadSimSpecsFile, datasets_path, dataset_name)
+
+Hierarchy<- SimSpecs2Hierarchy( BaseSimSpec, WithinSimSpecs,datasets_path,
+                                base_expr_data_path, base_expr_data,
+                     base_has_decision, base_expr_RData, method_cor, verbose)
+return(Hierarchy)
+}
+
+SaveHierarchy<- function(Hierarchy, hierarchy_name, datasets_path) {
+    dataset_name<- Hierarchy$base$base_sim_specs$base_dataset_name
+    network_name<- Hierarchy$base$base_sim_specs$base_network_name
+    prefix_path=paste0(datsets_path,'/',dataset_name,'/simulations/hierarchical/')
+    dir.create(paste0(prefix_path, hierarchy_name), showWarnings=FALSE, recursive=TRUE)
+    saveRDS(paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
+        }
+
+
+LayeredFromHierarchy<-function(Hierarchy, datasets_path,
+                           base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
+                           base_has_decision=FALSE, base_expr_RData=TRUE,
+                           method_cor='spearman',verbose=0
+                                )
+{       
+   baseAssumedColors<- Hierarchy$base$color_labels
+   baseAssumedMEs<- Hierarchy$base$MEs
+   baseSim<-Specs2Sim(Hierarchy$base$base_sim_spec,datasets_path,
+                           base_expr_data_path, base_expr_data, #one of those must not be null
+                           base_has_decision, base_expr_RData,
+                           method_cor,verbose)  
+   withinAssumedColors<- vector(mode='list', length= length(Hierarchy)-1)
+   withinAssumedMEs<- vector(mode='list', length= length(Hierarchy)-1)
+    if (verbose>0) print("Done base")
+   for (i in 1:(length(Hierarchy)-1)){
+    withinAssumedColors[[i]]<- Hierarchy[[paste0('within',i)]]$color_labels
+    withinAssumedMEs[[i]]<- Hierarchy[[paste0('within',i)]]$MEs
+    withinSims[[i]]<- Specs2Sim(Hierarchy[[paste0('within',i)]]$base_sim_spec,datasets_path,
+                           base_expr_data_path, base_expr_data, #one of those must not be null
+                           base_has_decision, base_expr_RData,
+                           method_cor,verbose)
+     
+    if (verbose>0) print(paste0("Done within",i))
+    }
+   layered_sim<-LayeredSimulationByReplacement(baseSim, baseAssumedColors, baseAssumedMEs, 
+                                           withinSims, withinAssumedColors, withinAssumedMEs)
+return(layered_sim)
+}
+LayeredFromHierPath<-function(hierarchy_name, datasets_path,dataset_name,
+                           base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
+                           base_has_decision=FALSE, base_expr_RData=TRUE,
+                           method_cor='spearman',verbose=0){
+
+    prefix_path=paste0(datsets_path,'/',dataset_name,'/simulations/hierarchical/')
+    Hier<-readRDS(paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
+   return(LayeredFromHierarchy(Hier, datasets_path,
+                           base_expr_data_path, base_expr_data, #one of those must not be null
+                           base_has_decision, base_expr_RData,
+                           method_cor,verbose)) 
+}
+
 SmallGrayModules<- function(GrayIndicator, sim_expr_data, Other_full_clustering, neg_cor_prop,
                             MAX_COR=1){
   #1. Find clusters in Other_full_clustering bigger than 1 and in Gray area

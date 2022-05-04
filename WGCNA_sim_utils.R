@@ -58,10 +58,10 @@ members_count_check <- function(sim_labels, real_labels, sim_name, real_name){
   OK <- ( sum(real_labels_counts != sim_labels_counts) ==0)
   msg <- NULL
   if (!OK){
-    if (is.null(real_name)) msg<- paste0("Error: left and right have different histograms")
-    else msg<-paste0("Error: ",sim_name,"  and ", real_name,"  have different histograms")
+    if (is.null(real_name)) msg<- paste0(" left and right have different histograms")
+    else msg<-paste0(" ",sim_name,"  and ", real_name,"  have different histograms")
   }
-  list(status=OK, msg=msg )
+  list(status=OK, msg=msg, real_counts=real_labels_counts, sim_counts=sim_labels_counts )
 }
 
 pick_matching_idx<- function(lab, real_labels){
@@ -78,7 +78,49 @@ reorder_left_by_right<- function(sim_labels, real_labels){
     unique(sim_labels), unique(real_labels), "simulated data labels", "real data labels")
   if(!same_mem_check$status) stop(same_mem_check$msg)
   mem_c_check <-  members_count_check(sim_labels, real_labels,"simulated data labels", "real data labels")
-  if(!mem_c_check$status) stop(mem_c_check$msg)
+  if(!mem_c_check$status) { print("real:"); print(mem_c_check$real_counts);
+                            print("sim:"); print(mem_c_check$sim_counts); 
+                            print(mem_c_check$msg)
+                            resolve=readline(prompt='Resolve by moving required number of simulated labels?(y/n)')
+                            if (resolve!='y') stop('killing execution')
+                            else
+                            {
+                            DIFF= mem_c_check$real_counts-mem_c_check$sim_counts
+                            excess_stack=c('X')
+                            missing_stack=c('X')
+                            for (i in seq_along(names(DIFF)))
+                                {
+                            if (DIFF[[i]]<0){
+                                            how_many= -1*DIFF[[i]]
+                                            for (j in 1:how_many) excess_stack<-c(excess_stack, names(DIFF)[[i]])
+                                            }
+                            if (DIFF[[i]]>0){
+                                            how_many= DIFF[[i]]
+                                            for (j in 1:how_many) missing_stack<-c(missing_stack, names(DIFF)[[i]])
+                                            }
+                                }
+                            print(DIFF)
+                            print(excess_stack)
+                            print(missing_stack)
+                            if (!len_check(excess_stack, missing_stack, 'excess in sim ','missing in sim')$status) 
+                                            stop(len_check$msg)
+                            for (i in seq_along(excess_stack))
+                                     {
+                                 if (i>1)
+                                        {
+                                            color_to_take=excess_stack[[i]]
+                                            color_to_replace=missing_stack[[i]]
+                                            FillIndex=sample(which(sim_labels==color_to_take),1)
+                                            sim_labels[[FillIndex]]=color_to_replace
+                                        }
+                                     }  
+                              print(table(sim_labels))
+                              print(table(real_labels))
+                              mem_c_check2 <-  members_count_check(sim_labels, real_labels,
+                                                "simulated data labels", "real data labels")
+                               if(!mem_c_check2$status) stop(mem_c_check2$msg) 
+                             }
+                            }
   distinct_labels <- unique(real_labels)
   label_idx_map <- lapply(distinct_labels, pick_matching_idx, real_labels)
   names(label_idx_map)<-distinct_labels
@@ -126,8 +168,7 @@ BaseClustering2SavedSim<- function(new_sim_name,
                            base_has_decision=FALSE, base_expr_RData=TRUE,
                            method_cor='spearman', #for adjaceny matrix
                            verbose=0, other_named_args=NULL,#simulateDatExpr_fromInput
-                           min_from_perm=FALSE, abs_cor=TRUE, true_grey_frac=0.5, #clust_res2simDEargs
- ...#clust_res2simDEargs
+                           min_from_perm=FALSE, abs_cor=TRUE, true_grey_frac=0.5 #clust_res2simDEargs
     ){
     clres<- DoClusterFromFilenameArgs(datasets_path, base_dataset_name, base_network_name, base_clustering_name, method_cor, base_expr_data, base_expr_data_path, base_has_decision, base_expr_RData, calculateMEs=TRUE)
 if (is.null(base_expr_data)){ if (is.null(base_expr_data_path)) stop('expr_data or expr_data_path must not be null') 
@@ -136,10 +177,11 @@ if (is.null(base_expr_data)){ if (is.null(base_expr_data_path)) stop('expr_data 
                         }
 if (base_has_decision) base_expr_data<- base_expr_data[,-1]
 C<- cor(base_expr_data, method=method_cor)
-  input_args_list= clust_res2simDEargs(base_expr_data, clres$color_labels, C, clres$ME_data$eigengenes, min_from_perm, abs_cor, true_grey_frac, save_steps=FALSE, save_final=FALSE, ...) 
+  input_args_list= clust_res2simDEargs(base_expr_data, clres$color_labels, C, clres$ME_data$eigengenes, min_from_perm, abs_cor, true_grey_frac, save_steps=FALSE, save_final=FALSE) 
  simul<-simulateDatExpr_fromInput(input_args_list, verbose, other_named_args)
  if (ReorderByReal)
-    s_result<-ReorderSimByReal(simul$sim_result, clres) 
+   { print(table(clres$color_labels))
+    s_result<-ReorderSimByReal(simul$sim_result, clres) }
  else
     s_result<- simul$sim_result
     specs<- list(name=new_sim_name,

@@ -124,7 +124,7 @@ colors2props <- function( clabels, distinct_ordered_colors=NULL,true_grey_frac=0
 clust_res2simDEargs <- function(dataExpr, color_labels, cormat, MEs, 
                                 min_from_perm=FALSE, abs_cor=TRUE,
                                 true_grey_frac=0.5, 
-                                save_steps=FALSE,save_final=TRUE, verbose=0,  ...){
+                                save_steps=FALSE,save_final=TRUE, verbose=0 ){
   #get the input arguments to the simulateDatExpr from 
   #expression data (dataExpr) and results of clustering by WGCNA package
   #MEs are eigengenes
@@ -136,7 +136,6 @@ clust_res2simDEargs <- function(dataExpr, color_labels, cormat, MEs,
   #true_grey_frac determines the proportion of "true grey genes", last entry of modProportions argument to...
   #   ...simulateDatExpr
   #if abs_cor==TRUE, then returned min and max relates to absolute values of correlations
-  #further arguments (...) are delivered to cor (during minCor maxCor computations)
   #
   #returns a list of arguments named as correspoding formals in simulateDatExpr
   #list contains vectors of minimal and maximal correlations, gene means, eigengenes,
@@ -152,7 +151,7 @@ clust_res2simDEargs <- function(dataExpr, color_labels, cormat, MEs,
   
   
   if (verbose>0) print("Calculating min and max correlations.")
-  cor_par_list <- colors2sim_cor_params(colornames, dataExpr, color_labels, MEs,abs_cor,min_from_perm,verbose, ... )
+  cor_par_list <- colors2sim_cor_params(colornames, dataExpr, color_labels, MEs,abs_cor,min_from_perm,verbose  )
   if (verbose>0) print("Done calculations of min and max correlations.")
   
   if(save_steps) {if (verbose>0) print("Saving min and max correlations..."); saveRDS(cor_par_list, "cor_pars.rds")
