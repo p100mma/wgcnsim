@@ -46,7 +46,6 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
   {if (!is.null(datasets_path)){
     if (is.null(dataset_name) | is.null(network_name)| is.null(  new_clustering_name )) stop('provide dataset_name, new_clustering_name and network_name arguments if datasets_path is not null')
     prefix_path=paste0(datasets_path,'/',dataset_name,'/networks/',network_name,'/')
-    print(prefix_path)
     dir.create(paste0(prefix_path,'clusterings/',new_clustering_name), showWarnings=FALSE, recursive=TRUE)
 }else{prefix_path=NULL}
   
@@ -129,10 +128,12 @@ else saveRDS(final_results, "Adj2Clust_results.rds");
 return(final_results)}
 DoClusterFromFilenameArgs<- function(
                                      datasets_path, dataset_name, network_name,clustering_name, method_cor='spearman',
-                                     expr_data=NULL, expr_data_path=NULL, has_decision=FALSE, expr_RData=TRUE){
+                                     expr_data=NULL, expr_data_path=NULL, has_decision=FALSE, expr_RData=TRUE, 
+calculateMEs=FALSE){
 prefix_path=paste0(datasets_path,'/',dataset_name,'/networks/',network_name,'/')
 ARGS<- readRDS(paste0(prefix_path,'clusterings/',clustering_name,"/Adj2Clust_args.rds"))
 ARGS$save_final=FALSE
+ARGS$calculateMEs=calculateMEs
 if (is.null(expr_data)){ if (is.null(expr_data_path)) stop('expr_data or expr_data_path must not be null') 
                                                       else if (expr_RData) { load(expr_data_path); expr_data<-as.matrix(data.train) } 
                                                                             else  expr_data<- readRDS(expr_data_path)
