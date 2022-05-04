@@ -45,9 +45,9 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
                                               save_args=FALSE) #relevant if save=TRUE
   {if (!is.null(datasets_path)){
     if (is.null(dataset_name) | is.null(network_name)| is.null(  new_clustering_name )) stop('provide dataset_name, new_clustering_name and network_name arguments if datasets_path is not null')
-    prefix_path=paste0(datasets_path,'/',dataset_name,'/',network_name,'/')
-    dir.create(paste0(prefix_path,clusterings),warnings=FALSE)
-    dir.create(paste0(prefix_path,'/clusterings/',new_clustering_name))
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/networks/',network_name,'/')
+    print(prefix_path)
+    dir.create(paste0(prefix_path,'clusterings/',new_clustering_name), showWarnings=FALSE, recursive=TRUE)
 }else{prefix_path=NULL}
   
   if (verbose_lvl>0) print("Calculating dissimilarity...")
@@ -85,7 +85,7 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
   
   if (verbose_lvl>0) print("Finished clustering.")
   
-  if (save_steps) {if (verbose_lvl>0) print("Saving cluster labels...");if (!is.null ( dataset_name )){ saveRDS(dynamicMods, prefix_path,'/clusterings/',new_clustering_name,"/dynamicMods.rds")} else saveRDS(dynamicMods,'dynamicMods.rds');
+  if (save_steps) {if (verbose_lvl>0) print("Saving cluster labels...");if (!is.null ( dataset_name )){ saveRDS(dynamicMods, paste0(prefix_path,'/clusterings/',new_clustering_name,"/dynamicMods.rds"))} else saveRDS(dynamicMods,'dynamicMods.rds');
     if (verbose_lvl>0) print("Saved cluster labels to dynamicMods.rds")}
   
   
@@ -110,31 +110,36 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
                         )
   
   if (save_final) {if (verbose_lvl>0) print("Saving final results (dendogram, color labels, MEs..."); 
-    if (!is.null ( dataset_name )) saveRDS(final_results, prefix_path,'/clusterings/',new_clustering_name,"/Adj2Clust_results.rds")
+    if (!is.null ( dataset_name )) saveRDS(final_results, paste0(prefix_path,'/clusterings/',new_clustering_name,"/Adj2Clust_results.rds"))
 else saveRDS(final_results, "Adj2Clust_results.rds");
     if (verbose_lvl>0) print("Saved final results to Adj2Clust_results.rds")}
-  if (save_args) if(!is.null ( dataset_name )) saveRDS( list(  
-                                                              diss_as_TOM= diss_as_TOM,ts_other_args=ts_other_args,
+  if (save_args) if(!is.null ( dataset_name )){ 
+                                                        ARGS= list(  
+                                                              diss_as_TOM= diss_as_TOM,
                                                               hclust_method = hclust_method, minModSize=minModSize,
-                                                              dc_sensivity= dc_sensivity, dc_pam2parent=dc_pam2parent, dc_doPAM = dc_doPAM, 
-                                                              dc_other_args=dc_other_args,  ME_other_args= ME_other_args,
-                                                              ),
-                                                                prefix_path,'/clusterings/',new_clustering_name,"/Adj2Clust_args.rds") 
-
+                                                              dc_sensivity= dc_sensivity, dc_pam2parent=dc_pam2parent, 
+                                                              dc_doPAM = dc_doPAM 
+                                                              )
+                                                        if (!is.null(ts_other_args)) ARGS$ts_other_args=ts_other_args
+                                                        if (!is.null(dc_other_args)) ARGS$dc_other_args=dc_other_args
+                                                        if (!is.null(ME_other_args)) ARGS$ME_other_args= ME_other_args
+                                                            saveRDS(ARGS, 
+                                                               paste0(prefix_path,'/clusterings/',new_clustering_name,"/Adj2Clust_args.rds")) 
+}
 return(final_results)}
 DoClusterFromFilenameArgs<- function(
                                      datasets_path, dataset_name, network_name,clustering_name, method_cor='spearman',
                                      expr_data=NULL, expr_data_path=NULL, has_decision=FALSE, expr_RData=TRUE){
-prefix_path=paste0(datasets_path,'/',dataset_name,'/',network_name,'/')
-ARGS<- readRDS(prefix_path,'/clusterings/',clustering_name,"/Adj2Clust_args.rds")
+prefix_path=paste0(datasets_path,'/',dataset_name,'/networks/',network_name,'/')
+ARGS<- readRDS(paste0(prefix_path,'clusterings/',clustering_name,"/Adj2Clust_args.rds"))
 ARGS$save_final=FALSE
 if (is.null(expr_data)){ if (is.null(expr_data_path)) stop('expr_data or expr_data_path must not be null') 
                                                       else if (expr_RData) { load(expr_data_path); expr_data<-as.matrix(data.train) } 
                                                                             else  expr_data<- readRDS(expr_data_path)
                         }
 if (has_decision) expr_data<- expr_data[,-1]
-C<- cor(expr_data, method_cor)
-ARGS$adj_mat <-abs(C)^network_name
+C<- cor(expr_data, method=method_cor)
+ARGS$adj_mat <-abs(C)^strtoi(network_name)
 ARGS$dataExpr<- expr_data
 RESULT<- do.call(ClusteringResults.fromAdjacency, ARGS)
 return(RESULT)
