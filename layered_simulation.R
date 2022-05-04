@@ -23,6 +23,9 @@ LayeredSimulationByReplacement <- function(baseSim, baseAssumedColors, baseAssum
   withinHierarchy<- vector(mode="list", length=length(withinAssumedColors))
   for (i in seq_along(withinAssumedColors))
       { ALLgrey<- (ALLgrey & (withinAssumedColors[[i]]=="grey") ) 
+        #print(dim(withinAssumedColors[[i]]))
+        #print(dim(RESexpr))
+        #print(dim(withinSims[[i]]))
         RESexpr[,withinAssumedColors[[i]]!="grey"]= withinSims[[i]][,withinAssumedColors[[i]]!="grey"]
         #^ take non-grey modules from withinSims, put in resulting simulation at their placement
         colors_final[withinAssumedColors[[i]]!="grey"]=paste0(withinAssumedColors[[i]][withinAssumedColors[[i]]!="grey"],i)
@@ -75,9 +78,9 @@ return(Hierarchy)
 SaveHierarchy<- function(Hierarchy, hierarchy_name, datasets_path) {
     dataset_name<- Hierarchy$base$base_sim_specs$base_dataset_name
     network_name<- Hierarchy$base$base_sim_specs$base_network_name
-    prefix_path=paste0(datsets_path,'/',dataset_name,'/simulations/hierarchical/')
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/hierarchical/')
     dir.create(paste0(prefix_path, hierarchy_name), showWarnings=FALSE, recursive=TRUE)
-    saveRDS(paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
+    saveRDS(Hierarchy,paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
         }
 
 
@@ -92,9 +95,10 @@ LayeredFromHierarchy<-function(Hierarchy, datasets_path,
    baseSim<-Specs2Sim(Hierarchy$base$base_sim_spec,datasets_path,
                            base_expr_data_path, base_expr_data, #one of those must not be null
                            base_has_decision, base_expr_RData,
-                           method_cor,verbose)  
+                           method_cor,verbose)$datExpr  
    withinAssumedColors<- vector(mode='list', length= length(Hierarchy)-1)
    withinAssumedMEs<- vector(mode='list', length= length(Hierarchy)-1)
+   withinSims<- vector(mode='list', length= length(Hierarchy)-1)
     if (verbose>0) print("Done base")
    for (i in 1:(length(Hierarchy)-1)){
     withinAssumedColors[[i]]<- Hierarchy[[paste0('within',i)]]$color_labels
@@ -102,7 +106,7 @@ LayeredFromHierarchy<-function(Hierarchy, datasets_path,
     withinSims[[i]]<- Specs2Sim(Hierarchy[[paste0('within',i)]]$base_sim_spec,datasets_path,
                            base_expr_data_path, base_expr_data, #one of those must not be null
                            base_has_decision, base_expr_RData,
-                           method_cor,verbose)
+                           method_cor,verbose)$datExpr
      
     if (verbose>0) print(paste0("Done within",i))
     }
@@ -115,7 +119,7 @@ LayeredFromHierPath<-function(hierarchy_name, datasets_path,dataset_name,
                            base_has_decision=FALSE, base_expr_RData=TRUE,
                            method_cor='spearman',verbose=0){
 
-    prefix_path=paste0(datsets_path,'/',dataset_name,'/simulations/hierarchical/')
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/hierarchical/')
     Hier<-readRDS(paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
    return(LayeredFromHierarchy(Hier, datasets_path,
                            base_expr_data_path, base_expr_data, #one of those must not be null
