@@ -10,6 +10,7 @@ powerEstimation <-function(corMatrix, Rcut=0.85, powers=c(1:8), hist_breaks=10, 
   if (save)
     {
         saveRDS(result, paste0(datasets_path,'/',dataset_name,'/networks/',result$powerEstimate,'.rds'))
+        dir.create(paste0(datasets_path,'/',dataset_name,'/networks/',result$powerEstimate,'/',clusterings),warnings=FALSE)
     }
     return(result)
 }
@@ -44,7 +45,10 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
                                               save_args=FALSE) #relevant if save=TRUE
   if (!is.null(datasets_path)){
     if (is.null(dataset_name) | is.null(network_name)| is.null(  new_clustering_name )) stop('provide dataset_name, new_clustering_name and network_name arguments if datasets_path is not null')
-    prefix_path=paste0(datasets_path,'/',dataset_name,'/',network_name,'/')}else{prefix_path=NULL}
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/',network_name,'/')
+    dir.create(paste0(prefix_path,clusterings),warnings=FALSE)
+    dir.create(paste0(prefix_path,'/clusterings/',new_clustering_name))
+}else{prefix_path=NULL}
   
   if (verbose_lvl>0) print("Calculating dissimilarity...")
   if (diss_as_TOM){
@@ -81,7 +85,7 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
   
   if (verbose_lvl>0) print("Finished clustering.")
   
-  if (save_steps) {if (verbose_lvl>0) print("Saving cluster labels...");if (!is.null ( dataset_name )) saveRDS(dynamicMods, prefix_path,'/clusterings/',new_clustering_name,"/dynamicMods.rds") else saveRDS(dynamicMods,'dynamicMods.rds');
+  if (save_steps) {if (verbose_lvl>0) print("Saving cluster labels...");if (!is.null ( dataset_name )){ saveRDS(dynamicMods, prefix_path,'/clusterings/',new_clustering_name,"/dynamicMods.rds")} else saveRDS(dynamicMods,'dynamicMods.rds');
     if (verbose_lvl>0) print("Saved cluster labels to dynamicMods.rds")}
   
   
