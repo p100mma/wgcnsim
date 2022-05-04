@@ -10,7 +10,7 @@ powerEstimation <-function(corMatrix, Rcut=0.85, powers=c(1:8), hist_breaks=10, 
   if (save)
     {
         saveRDS(result, paste0(datasets_path,'/',dataset_name,'/networks/',result$powerEstimate,'.rds'))
-        dir.create(paste0(datasets_path,'/',dataset_name,'/networks/',result$powerEstimate,'/',clusterings),warnings=FALSE)
+        dir.create(paste0(datasets_path,'/',dataset_name,'/networks/',result$powerEstimate,'/clusterings'),showWarnings=FALSE, recursive=TRUE)
     }
     return(result)
 }
@@ -43,7 +43,7 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
                                               datasets_path=NULL, dataset_name=NULL, network_name=NULL,
                                               new_clustering_name=NULL,
                                               save_args=FALSE) #relevant if save=TRUE
-  if (!is.null(datasets_path)){
+  {if (!is.null(datasets_path)){
     if (is.null(dataset_name) | is.null(network_name)| is.null(  new_clustering_name )) stop('provide dataset_name, new_clustering_name and network_name arguments if datasets_path is not null')
     prefix_path=paste0(datasets_path,'/',dataset_name,'/',network_name,'/')
     dir.create(paste0(prefix_path,clusterings),warnings=FALSE)
@@ -113,13 +113,13 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
     if (!is.null ( dataset_name )) saveRDS(final_results, prefix_path,'/clusterings/',new_clustering_name,"/Adj2Clust_results.rds")
 else saveRDS(final_results, "Adj2Clust_results.rds");
     if (verbose_lvl>0) print("Saved final results to Adj2Clust_results.rds")}
-  if (save_args)  (!is.null ( dataset_name )) saveRDS( list(  
+  if (save_args) if(!is.null ( dataset_name )) saveRDS( list(  
                                                               diss_as_TOM= diss_as_TOM,ts_other_args=ts_other_args,
                                                               hclust_method = hclust_method, minModSize=minModSize,
                                                               dc_sensivity= dc_sensivity, dc_pam2parent=dc_pam2parent, dc_doPAM = dc_doPAM, 
                                                               dc_other_args=dc_other_args,  ME_other_args= ME_other_args,
                                                               ),
-                                                                prefix_path,'/clusterings/',new_clustering_name,"/Adj2Clust_args.rds")
+                                                                prefix_path,'/clusterings/',new_clustering_name,"/Adj2Clust_args.rds") 
 
 return(final_results)}
 DoClusterFromFilenameArgs<- function(
