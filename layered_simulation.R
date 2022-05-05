@@ -347,7 +347,6 @@ SmallSubModules<- function(base_color_labels, sim_expr_data, Other_full_clusteri
 RandomSmallSubModules<- function(base_color_labels, sim_expr_data, neg_cor_prop,
                                  MAX_COR=0.625, MIN_COR=0.375, MaxSubmoduleSize=40,
                                  sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize)){
-    print("doing")
   all_colors<- unique(base_color_labels)
   for (color_label in all_colors){if(color_label!="grey"){
     print(paste0("Filling ",color_label))
@@ -388,15 +387,12 @@ RandomSmallSubModulesFromHierPath<- function(hierarchy_name, datasets_path,datas
                             base_expr_data_path, base_expr_data, #one of those must not be null
                             base_has_decision, base_expr_RData,
                             method_cor,verbose)
-   print(!is.null( GreySpecs ))
-   print(!is.null( GreySpecsName  ))
-   print(!((is.null( GreySpecs )) & (is.null( GreySpecsName ))))
    if(!is.null( GreySpecs ) )LS<- ApplyGreyModulesSpecs (LS, GreySpecs)
    if(!is.null( GreySpecsName ) )LS<- ApplyGreyModulesSpecsFromFile (LS, GreySpecsName, dataset_name, datasets_path)
     if(!((is.null( GreySpecs )) & (is.null( GreySpecsName )))) {LS$SubMods<-  RandomSmallSubModules(LS$hierarchy$base$color_labels, LS$RGM, neg_cor_prop,
                                  MAX_COR, MIN_COR, MaxSubmoduleSize,
-                                 sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize)); print("not null opt")
-   } else{print("null opt");
+                                 sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize))
+   } else{
     LS$SubMods<-RandomSmallSubModules(LS$hierarchy$base$color_labels, LS$expr_data, neg_cor_prop,
                                  MAX_COR, MIN_COR, MaxSubmoduleSize,
                                  sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize))}
@@ -442,6 +438,48 @@ ApplyRandModulesSpecsFromFile<- function(layered_sim, RSubmodulesName, dataset_n
    return(applied) 
 }
 
+EvaluateRandModSpec<- function(RSpec=NULL, RSpecName=NULL, #one must not be null,
+                               save_evaluation=FALSE, #if true RSpecName must be not null
+                               calcClCoef=FALSE, calcDTOM=FALSE,
+                               layered_sim=NULL, hier=NULL, hierarchy_name=NULL, #one must not be null,
+                               dataset_name=NULL, datasets_path=NULL, #if RSpecFile or hierPath
+                               base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null if layered_sim=NULL
+                               base_has_decision=FALSE, base_expr_RData=TRUE,
+                               method_cor='spearman',verbose=0){
+    if(is.null(RSpec)) if(is.null(RSpecName)) stop('one of RSpec or RSpecName must not be NULL')
+                          else  RSpec<- LoadRandomModulesSpecs(RSpecName, dataset_name, datasets_path)
+    if(is.null(layered_sim)) if(is.null(hier)){ if(is.null(hierarchy_name)) stop('One of: layered_sim, hier, hierarchy_name must not be null')
+                                               else layered_sim<- LayeredFromHierPath(hierarchy_name, datasets_path,dataset_name,
+                                                                   base_expr_data_path, base_expr_data, 
+                                                                   base_has_decision, base_expr_RData,
+                                                                   method_cor,verbose)
+                                              }
+                             else
+                             layered_sim<- LayeredFromHierarchy(hier, datasets_path,
+                                                                   base_expr_data_path, base_expr_data, 
+                                                                   base_has_decision, base_expr_RData,
+                                                                   method_cor,verbose)
+    LS<-ApplyRandModulesSpecs(layered_sim, RSpec)
+    if (is.null(hier)) hier<- ReadHierarchy(hierarchy_name, datasets_path, dataset_name)
+    real_net_name<-hier$base$base_sim_specs$base_network_name
+    tempc<-cor(LS$SubMods, method=method_cor)
+    tempadj<- abs(tempc)^strtoi(real_net_name)
+    rm(tempc)
+    RandStats<- list(deg_distrMods<- colSums(tempadj[,!LS$GrayArea]))    
+    if (calcClCoef){ print('Clustering coef...'); RandStats$ClCoef<- clusterCoef(tempadj)[!LS$GrayArea]}
+    if (calcDTOM) { tempdTOM<-1-TOMsimilarity(tempadj);RandStats$TOMdDistr<-  as.vector(tempdTOM[!LS$GrayArea,!LS$GrayArea] )  }
+    if (save_evaluation){
+        prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/RandomProperSubmodules/')
+        saveRDS(RandStats,paste0(prefix_path,RSpecName,'/Stats.rds'))}
+    return(RandStats)
+}
+
+LoadRandSpecStats<- function(RSpecName, datasets_path, dataset_name)
+{
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/RandomProperSubmodules/')
+        RandStats = readRDS(paste0(prefix_path,RSpecName,'/Stats.rds'))
+        return(RandStats)
+}
 Layered2Submodules <- function(layered_simulation,  neg_cor_prop, base_sim_name='base',
                                GrMAX_COR=0.75, GrMIN_COR=0, GrMaxSubmoduleSize=5, Grcorpower=1,
                                GrsizeProbs=rep( 1/GrMaxSubmoduleSize,GrMaxSubmoduleSize),
