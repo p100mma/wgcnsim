@@ -281,8 +281,15 @@ EvaluateGreyModSpec<- function(GreySpec=NULL, GreySpecName=NULL, #one must not b
     if (calcDTOM) { tempdTOM<-1-TOMsimilarity(tempadj);GrayStats$TOMdDistr<-  as.vector(tempdTOM[LS$GrayArea,LS$GrayArea] )  }
     if (save_evaluation){
         prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/GraySubmodules/')
-        saveRDS(GrayStats,paste0(prefix_path,GraySubmodulesName,'/Stats.rds'))}
+        saveRDS(GrayStats,paste0(prefix_path,GreySpecName,'/Stats.rds'))}
     return(GrayStats)
+}
+
+LoadGreySpecStats<- function(GreySpecName, datasets_path, dataset_name)
+{
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/GraySubmodules/')
+        GrayStats = readRDS(paste0(prefix_path,GreySpecName,'/Stats.rds'))
+        return(GrayStats)
 }
                                
 TestRandomGreyModules<- function(GrayIndicator, sim_expr_data, neg_cor_prop,
