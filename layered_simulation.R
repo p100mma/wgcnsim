@@ -82,8 +82,10 @@ SaveHierarchy<- function(Hierarchy, hierarchy_name, datasets_path) {
     dir.create(paste0(prefix_path, hierarchy_name), showWarnings=FALSE, recursive=TRUE)
     saveRDS(Hierarchy,paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
         }
-
-
+ReadHierarchy<- function(hierarchy_name, datasets_path, dataset_name) {
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/hierarchical/')
+    loadedH<-readRDS(paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
+    return(loadedH)}
 LayeredFromHierarchy<-function(Hierarchy, datasets_path,
                            base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
@@ -244,6 +246,41 @@ ApplyGreyModulesSpecsFromFile<- function(layered_sim, GraySubmodulesName, datase
    return(applied) 
 }
 
+EvaluateGreyModSpec<- function(GreySpec=NULL, GreySpecName=NULL, #one must not be null,
+                               save_evaluation=FALSE, #if true GreySpecName must be not null
+                               calcClCoef=FALSE,
+                               layered_sim=NULL, hier=NULL, hierarchy_name=NULL, #one must not be null,
+                               dataset_name=NULL, datasets_path=NULL, #if GreySpecFile or hierPath
+                               base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null if layered_sim=NULL
+                               base_has_decision=FALSE, base_expr_RData=TRUE,
+                               method_cor='spearman',verbose=0){
+    if(is.null(GreySpec)) if(is.null(GreySpecName)) stop('one of GreySpec or GreySpecName must not be NULL')
+                          else  GreySpec<- LoadGreyModulesSpecs(GreySpecName, dataset_name, datasets_path)
+    if(is.null(layered_sim)) if(is.null(hier)){ if(is.null(hierarchy_name)) stop('One of: layered_sim, hier, hierarchy_name must not be null')
+                                               else layered_sim<- LayeredFromHierPath(hierarchy_name, datasets_path,dataset_name,
+                                                                   base_expr_data_path, base_expr_data, 
+                                                                   base_has_decision, base_expr_RData,
+                                                                   method_cor,verbose)
+                                              }
+                             else
+                             layered_sim<- LayeredFromHierarchy(hier, datasets_path,
+                                                                   base_expr_data_path, base_expr_data, 
+                                                                   base_has_decision, base_expr_RData,
+                                                                   method_cor,verbose)
+    LS<-ApplyGreyModulesSpecs(layered_sim, GreySpec)
+    if (is.null(hier)) hier<- ReadHierarchy(hierarchy_name, datasets_path, dataset_name)
+    real_net_name<-hier$base$base_sim_specs$base_network_name
+    tempc<-cor(LS$RGM, method=method_cor)
+    tempadj<- abs(tempc)^strtoi(real_net_name)
+    rm(tempc)
+    GrayStats<- list(deg_distrGrey<- colSums(tempadj[,hier$GrayArea]))    
+    if (calcClCoef){ print('Clustering coef...'); GrayStats$ClCoef<- clusterCoef(tempadj)[,hier$GrayArea]}
+    if (save_evaluation){
+        prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/GraySubmodules/')
+        saveRDS(GrayStats,paste0(prefix_path,GraySubmodulesName,'/Stats.rds'))}
+    return(GrayStats)
+}
+                               
 TestRandomGreyModules<- function(GrayIndicator, sim_expr_data, neg_cor_prop,
                                  MAX_CORs, MIN_CORs, MaxSubmoduleSizes,
                                  sizeProbsList=NULL, method_cor="spearman", 
