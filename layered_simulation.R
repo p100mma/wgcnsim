@@ -179,6 +179,70 @@ RandomGreyModules<- function(GrayIndicator, sim_expr_data, neg_cor_prop,
   return(sim_expr_data)
 }
 
+RandomGreyModulesFromHier<- function(Hierarchy, datasets_path,MAX_COR,MIN_COR,MaxSubmoduleSize, neg_cor_prop,
+                           corpower=1, sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize),
+                           base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
+                           base_has_decision=FALSE, base_expr_RData=TRUE,
+                           method_cor='spearman',verbose=0){
+            
+    LS<-LayeredFromHierarchy(Hierarchy, datasets_path,
+                        base_expr_data_path, base_expr_data, #one of those must not be null
+                        base_has_decision, base_expr_RData,
+                        method_cor,verbose)
+   LS$RGM<- RandomGreyModules(LS$GrayArea, LS$expr_data, neg_cor_prop,
+                             MAX_COR, MIN_COR, MaxSubmoduleSize, corpower,
+                             sizeProbs) 
+    return(LS)
+}
+
+SaveRandomGreyModulesFromHierPath<- function(hierarchy_name, datasets_path,dataset_name,neg_cor_prop,
+                                            GraySubmodulesName, MAX_COR,MIN_COR,MaxSubmoduleSize,
+                                            corpower=1, sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize),
+                                            base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
+                                            base_has_decision=FALSE, base_expr_RData=TRUE,
+                                            method_cor='spearman',verbose=0){
+    
+    LS<-LayeredFromHierPath(hierarchy_name, datasets_path,dataset_name,
+                            base_expr_data_path, base_expr_data, #one of those must not be null
+                            base_has_decision, base_expr_RData,
+                            method_cor,verbose)
+   LS$RGM<- RandomGreyModules(LS$GrayArea, LS$expr_data, neg_cor_prop,
+                             MAX_COR, MIN_COR, MaxSubmoduleSize, corpower,
+                             sizeProbs) 
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/GraySubmodules/')
+    dir.create(paste0(prefix_path, GraySubmodulesName), showWarnings=FALSE, recursive=TRUE)
+    GraySpecs<- list(NAME=GraySubmodulesName,
+                     base_dataset=dataset_name,
+                     base_hierarchy=hierarchy_name,
+                     neg_cor_prop=neg_cor_prop,
+                     MAX_COR=MAX_COR,
+                     MIN_COR=MIN_COR,
+                     MaxSubmoduleSize=MaxSubmoduleSize,
+                     corpower=corpower,
+                     sizeProbs=sizeProbs)
+    saveRDS(GraySpecs,paste0(prefix_path,GraySubmodulesName,'/Specs.rds'))
+    return(LS)
+}
+
+ApplyGreyModulesSpecs<- function(layered_sim, GreySpecs)
+{
+    layered_sim$RGM<- RandomGreyModules(layered_sim$GrayArea, layered_sim$expr_data, GreySpecs$neg_cor_prop,
+                                        GreySpecs$MAX_COR, GreySpecs$MIN_COR, GreySpecs$MaxSubmoduleSize,
+                                        GreySpecs$corpower, GreySpecs$sizeProbs)
+    return(layered_sim)
+}
+
+LoadGreyModulesSpecs<- function(GraySubmodulesName, dataset_name, datasets_path) {
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/GraySubmodules/')
+    NewSpecs<-readRDS(paste0(prefix_path,GraySubmodulesName,'/Specs.rds'))
+    return(NewSpecs)
+}
+
+ApplyGreyModulesSpecsFromFile<- function(layered_sim, GraySubmodulesName, dataset_name, datasets_path) {
+   GreySpecs<- LoadGreyModulesSpecs(GraySubmodulesName, dataset_name, datasets_path)
+   applied<- ApplyGreyModulesSpecs(layered_sim, GreySpecs)
+   return(applied) 
+}
 
 TestRandomGreyModules<- function(GrayIndicator, sim_expr_data, neg_cor_prop,
                                  MAX_CORs, MIN_CORs, MaxSubmoduleSizes,
@@ -277,11 +341,6 @@ layered_simulation$submods<-RandomSmallSubModules(layered_simulation$hierarchy[[
                                                  ModMAX_COR, ModMIN_COR, ModMaxSubmoduleSize,
                                                  ModsizeProbs)
 return(layered_simulation)
-    
-
-
-
-
 }
 
 
