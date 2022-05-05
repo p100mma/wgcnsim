@@ -57,7 +57,7 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
   if (verbose_lvl==4) {print("Supplied TOMsimilarity args: "); print(TOM_args[-1]) }
   
   TOM <- do.call(TOMsimilarity, TOM_args)
-  } else TOM <- adj_mat
+                    } else TOM <- adj_mat
   dissTOM <- 1-TOM
   
   if (verbose_lvl>0) print("Calculated dissimilarity")
@@ -129,7 +129,7 @@ return(final_results)}
 DoClusterFromFilenameArgs<- function(
                                      datasets_path, dataset_name, network_name,clustering_name, method_cor='spearman',
                                      expr_data=NULL, expr_data_path=NULL, has_decision=FALSE, expr_RData=TRUE, 
-calculateMEs=FALSE){
+calculateMEs=FALSE, dTOMpath=NULL, dTOMinFolderTree=FALSE){
 prefix_path=paste0(datasets_path,'/',dataset_name,'/networks/',network_name,'/')
 ARGS<- readRDS(paste0(prefix_path,'clusterings/',clustering_name,"/Adj2Clust_args.rds"))
 ARGS$save_final=FALSE
@@ -139,8 +139,12 @@ if (is.null(expr_data)){ if (is.null(expr_data_path)) stop('expr_data or expr_da
                                                                             else  expr_data<- readRDS(expr_data_path)
                         }
 if (has_decision) expr_data<- expr_data[,-1]
-C<- cor(expr_data, method=method_cor)
-ARGS$adj_mat <-abs(C)^strtoi(network_name)
+dtomat<-NULL
+if (!is.null(dTOMpath)) dtomat<- readRDS(dTOMpath)
+if (dTOMinFolderTree) dtomat<- readRDS(paste0(prefix_path,'dissMat.rds'))
+if (is.null(dtomat)) {C<- cor(expr_data, method=method_cor)
+ARGS$adj_mat <-abs(C)^strtoi(network_name)} else {ARGS$adj_mat=dtomat;
+                                                  ARGS$diss_as_TOM=FALSE}
 ARGS$dataExpr<- expr_data
 RESULT<- do.call(ClusteringResults.fromAdjacency, ARGS)
 return(RESULT)
