@@ -1,3 +1,6 @@
+
+#TO DO: add option to evaluate min max TOM on Gray Submodules
+
 LayeredSimulationByReplacement <- function(baseSim, baseAssumedColors, baseAssumedMEs, 
                                            withinSims, withinAssumedColors, withinAssumedMEs,
                                            baseSimName="base",
