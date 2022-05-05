@@ -251,7 +251,7 @@ ApplyGreyModulesSpecsFromFile<- function(layered_sim, GraySubmodulesName, datase
 
 EvaluateGreyModSpec<- function(GreySpec=NULL, GreySpecName=NULL, #one must not be null,
                                save_evaluation=FALSE, #if true GreySpecName must be not null
-                               calcClCoef=FALSE,
+                               calcClCoef=FALSE, calcDTOM=FALSE,
                                layered_sim=NULL, hier=NULL, hierarchy_name=NULL, #one must not be null,
                                dataset_name=NULL, datasets_path=NULL, #if GreySpecFile or hierPath
                                base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null if layered_sim=NULL
@@ -276,8 +276,9 @@ EvaluateGreyModSpec<- function(GreySpec=NULL, GreySpecName=NULL, #one must not b
     tempc<-cor(LS$RGM, method=method_cor)
     tempadj<- abs(tempc)^strtoi(real_net_name)
     rm(tempc)
-    GrayStats<- list(deg_distrGrey<- colSums(tempadj[,hier$GrayArea]))    
-    if (calcClCoef){ print('Clustering coef...'); GrayStats$ClCoef<- clusterCoef(tempadj)[,hier$GrayArea]}
+    GrayStats<- list(deg_distrGrey<- colSums(tempadj[,LS$GrayArea]))    
+    if (calcClCoef){ print('Clustering coef...'); GrayStats$ClCoef<- clusterCoef(tempadj)[LS$GrayArea]}
+    if (calcDTOM) { tempdTOM<-1-TOMsimilarity(tempadj);GrayStats$TOMdDistr<-  as.vector(tempdTOM[LS$GrayArea,LS$GrayArea] )  }
     if (save_evaluation){
         prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/GraySubmodules/')
         saveRDS(GrayStats,paste0(prefix_path,GraySubmodulesName,'/Stats.rds'))}
