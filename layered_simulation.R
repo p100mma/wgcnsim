@@ -206,9 +206,9 @@ SaveRandomGreyModulesFromHierPath<- function(hierarchy_name, datasets_path,datas
                                             corpower=1, sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize),
                                             base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                                             base_has_decision=FALSE, base_expr_RData=TRUE,
-                                            method_cor='spearman',verbose=0){
+                                            method_cor='spearman',dTOMpath=NULL,dTOMinFolderTree=FALSE, verbose=0){
     
-    LS<-LayeredFromHierPath(hierarchy_name=hierarchy_name, datasets_path=datasets_path,datasets_path=dataset_name,
+    LS<-LayeredFromHierPath(hierarchy_name=hierarchy_name, datasets_path=datasets_path,dataset_name=dataset_name,
                             base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
                             base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
                             method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose)

@@ -59,7 +59,7 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
   TOM <- do.call(TOMsimilarity, TOM_args)
                     } else TOM <- adj_mat
   dissTOM <- 1-TOM
-  
+  rm(TOM) 
   if (verbose_lvl>0) print("Calculated dissimilarity")
   
   if (save_steps) {if (verbose_lvl>0) print("Saving dissimilarity matrix..."); saveRDS(dissTOM, paste0(  prefix_path,"dissMat.rds") )
@@ -143,7 +143,7 @@ dtomat<-NULL
 if (!is.null(dTOMpath)) dtomat<- readRDS(dTOMpath)
 if (dTOMinFolderTree) dtomat<- readRDS(paste0(prefix_path,'dissMat.rds'))
 if (is.null(dtomat)) {C<- cor(expr_data, method=method_cor)
-ARGS$adj_mat <-abs(C)^strtoi(network_name)} else {ARGS$adj_mat=dtomat;
+ARGS$adj_mat <-abs(C)^strtoi(network_name)} else {ARGS$adj_mat=1-dtomat;
                                                   ARGS$diss_as_TOM=FALSE}
 ARGS$dataExpr<- expr_data
 RESULT<- do.call(ClusteringResults.fromAdjacency, ARGS)
