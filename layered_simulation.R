@@ -244,6 +244,29 @@ LoadGreyModulesSpecs<- function(GraySubmodulesName, dataset_name, datasets_path)
     return(NewSpecs)
 }
 
+SaveGreyModulesSpecs<- function(GreySpecs, GraySubmodulesName, dataset_name, datasets_path){
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/GraySubmodules/')
+    dir.create(paste0(prefix_path, GraySubmodulesName), showWarnings=FALSE, recursive=TRUE)
+    saveRDS(GraySpecs,paste0(prefix_path,GraySubmodulesName,'/Specs.rds'))
+}
+ 
+DefineGreyModulesSpec <-function(NAME, dataset_name, hierarchy_name,neg_cor_prop,  MAX_COR, MIN_COR,MaxSubmoduleSize,corpower=1,
+                                sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize), save_specs=FALSE,datasets_path=NULL)
+{
+    GraySpecs<- list(NAME=NAME,
+                     base_dataset=dataset_name,
+                     base_hierarchy=hierarchy_name,
+                     neg_cor_prop=neg_cor_prop,
+                     MAX_COR=MAX_COR,
+                     MIN_COR=MIN_COR,
+                     MaxSubmoduleSize=MaxSubmoduleSize,
+                     corpower=corpower,
+                     sizeProbs=sizeProbs)
+    if( save_specs) SaveGreyModulesSpecs(GreySpecs=GreySpecs, GraySubmodulesName=NAME, dataset_name=dataset_name, datasets_path=datasets_path)
+    return(GreySpecs)
+}
+
+
 ApplyGreyModulesSpecsFromFile<- function(layered_sim, GraySubmodulesName, dataset_name, datasets_path) {
    GreySpecs<- LoadGreyModulesSpecs(GraySubmodulesName, dataset_name, datasets_path)
    applied<- ApplyGreyModulesSpecs(layered_sim, GreySpecs)
@@ -382,7 +405,7 @@ RandomSmallSubModulesFromHierPath<- function(hierarchy_name, datasets_path,datas
                             GreySpecs=NULL, GreySpecsName=NULL,
                             base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
-                           method_cor='spearman',verbose=0){
+                           method_cor='spearman',dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree,verbose=0){
 
     LS<-LayeredFromHierPath(hierarchy_name=hierarchy_name, datasets_path=datasets_path,dataset_name=dataset_name,
                             base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
@@ -417,16 +440,37 @@ RandomSmallSubModulesFromHierPath<- function(hierarchy_name, datasets_path,datas
 
 ApplyRandModulesSpecs<- function(layered_sim, RSpecs, to_RGM=TRUE)
 {
-    if (to_RGM)layered_sim$SubMods<- RandomSmallSubModules(layered_sim$base$color_labels, layered_sim$RGM, RSpecs$neg_cor_prop,
+    if (to_RGM)layered_sim$SubMods<- RandomSmallSubModules(layered_sim$hierarchy$base$color_labels, layered_sim$RGM, RSpecs$neg_cor_prop,
                                  RSpecs$MAX_COR, RSpecs$MIN_COR, RSpecs$MaxSubmoduleSize,
                                  RSpecs$sizeProbs)
     else
-        layered_sim$SubMods<- RandomSmallSubModules(layered_sim$base$color_labels, layered_sim$expr_data, RSpecs$neg_cor_prop,
+        layered_sim$SubMods<- RandomSmallSubModules(layered_sim$hierarchy$base$color_labels, layered_sim$expr_data, RSpecs$neg_cor_prop,
                                  RSpecs$MAX_COR, RSpecs$MIN_COR, RSpecs$MaxSubmoduleSize,
                                  RSpecs$sizeProbs)
     return(layered_sim)
 }
 
+SaveRandModulesSpecs<- function(RSpecs, RandSubmodulesName, dataset_name, datasets_path){
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/RandomProperSubmodules/')
+    dir.create(paste0(prefix_path, RandSubmodulesName), showWarnings=FALSE, recursive=TRUE)
+    saveRDS(RSpecs,paste0(prefix_path,RandSubmodulesName,'/Specs.rds'))
+}
+ 
+DefineRandModulesSpec <-function(NAME, dataset_name, hierarchy_name,neg_cor_prop,  MAX_COR, MIN_COR,MaxSubmoduleSize,corpower=1,
+                                sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize), save_specs=FALSE,datasets_path=NULL)
+{
+    RSpecs<- list(NAME=NAME,
+                     base_dataset=dataset_name,
+                     base_hierarchy=hierarchy_name,
+                     neg_cor_prop=neg_cor_prop,
+                     MAX_COR=MAX_COR,
+                     MIN_COR=MIN_COR,
+                     MaxSubmoduleSize=MaxSubmoduleSize,
+                     corpower=corpower,
+                     sizeProbs=sizeProbs)
+    if( save_specs) SaveRandModulesSpecs(RSpecs=RSpecs, RandSubmodulesName=NAME, dataset_name=dataset_name, datasets_path=datasets_path)
+    return(RSpecs)
+}
 LoadRandomModulesSpecs<- function(RSubmodulesName, dataset_name, datasets_path) {
     prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/RandomProperSubmodules/')
     NewSpecs<-readRDS(paste0(prefix_path,RSubmodulesName,'/Specs.rds'))
@@ -491,20 +535,68 @@ layered_simulation$grayed<-RandomGreyModules(layered_simulation$GrayArea, layere
                              neg_cor_prop,
                              GrMAX_COR,GrMIN_COR, GrMaxSubmoduleSize, Grcorpower,
                              GrsizeProbs) 
-layered_simulation$submods<-RandomSmallSubModules(layered_simulation$hierarchy[[base_sim_name]]$color_labels,
+layered_simulation$SubMods<-RandomSmallSubModules(layered_simulation$hierarchy[[base_sim_name]]$color_labels,
                                                  layered_simulation$grayed, neg_cor_prop,
                                                  ModMAX_COR, ModMIN_COR, ModMaxSubmoduleSize,
                                                  ModsizeProbs)
 return(layered_simulation)
 }
 
+SaveFinalSimulationSpecs <-function(FinalSpecs,simulation_name, dataset_name,
+                                    datasets_path)
+{       
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/Final/')
+    dir.create(paste0(prefix_path, simulation_name), showWarnings=FALSE, recursive=TRUE)
+    saveRDS(FinalSpecs,paste0(prefix_path,simulation_name,'/Specs.rds'))
+    
+}
 
+DefineFinalSimulationSpecs <-function(simulation_name,dataset_name, hierarchy_name,
+                                      GraySubmodulesName=NULL, RandSubmodulesName=NULL,                                       save_specs=FALSE,
+                                     datasets_path=NULL)
+{       
+    NewSpecs<- list(simulation_name=simulation_name, dataset_name=dataset_name, hierarchy_name=hierarchy_name, GraySubmodulesName=GraySubmodulesName, RandSubmodulesName=RandSubmodulesName)
+if (save_specs)
+    SaveFinalSimulationSpecs( FinalSpecs=NewSpecs,simulation_name=simulation_name, dataset_name=dataset_name,
+                                    datasets_path=datasets_path)
+return(NewSpecs) 
+}
+
+ReadFinalSimulationSpecs <-function(simulation_name, dataset_name,
+                                    datasets_path)
+{       
+    prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/Final/')
+    FinalSpecs<-readRDS(paste0(prefix_path,simulation_name,'/Specs.rds'))
+    return(FinalSpecs) 
+}
+
+RunFinalSimulationFromSpecs <-function(FinalSpecs, datasets_path,
+                                        base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
+                           base_has_decision=FALSE, base_expr_RData=TRUE,
+                           method_cor='spearman', dTOMpath=NULL,dTOMinFolderTree=FALSE, verbose=0)
+{      
+    LShier<-ReadHierarchy(hierarchy_name=FinalSpecs$hierarchy_name, datasets_path=datasets_path, dataset_name=FinalSpecs$dataset_name)
+    LS<-LayeredFromHierarchy(Hierarchy=LShier, datasets_path=datasets_path,
+                           base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
+                           base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
+                           method_cor=method_cor, dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,  
+verbose=verbose)
+    if(!is.null(FinalSpecs$GraySubmodulesName)) {GrSpecs<-LoadGreyModulesSpecs(GraySubmodulesName=FinalSpecs$GraySubmodulesName, dataset_name=FinalSpecs$dataset_name, datasets_path=datasets_path); 
+    LS<-ApplyGreyModulesSpecs(layered_sim=LS, GreySpecs=GrSpecs)}
+    if(!is.null(FinalSpecs$RandSubmodulesName)){ RSpecs<-LoadRandomModulesSpecs(RSubmodulesName=FinalSpecs$RandSubmodulesName, dataset_name=FinalSpecs$dataset_name, datasets_path=datasets_path);to_RGM=FALSE;
+    if(!is.null(FinalSpecs$GraySubmodulesName))to_RGM=TRUE
+    print('doing Rand Modules')
+    print(to_RGM)
+    LS<- ApplyRandModulesSpecs(layered_sim=LS, RSpecs=RSpecs, to_RGM=to_RGM)}
+    return(LS)     
+}
 CompareClusteringAndLayered<- function(clust_result,layered_sim,
 side="simulation", main="sim vs base clusterings",...)
 {
 plotDendroAndColors(clust_result$geneTree, 
 as.data.frame(c(list(clust_result$color_labels),
-  lapply(layered_sim$hierarchy, function(x) x$color_labels))),c(side,names(layered_sim$hierarchy)), dendroLabels=FALSE, main=main, ...)
+  lapply(layered_sim$hierarchy, function(x) x$color_labels))),c(side,names(layered_sim$hierarchy)), dendroLabels=FALSE, main=main,
+        hang=0.03,addGuide=TRUE,guideHang=0.05, ...)
 
 }
 
