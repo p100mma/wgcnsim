@@ -49,18 +49,36 @@ SimSpecs2Hierarchy<- function( BaseSimSpec, WithinSimSpecs,
                              datasets_path,
                      base_expr_data_path=NULL, base_expr_data=NULL,
                      base_has_decision=FALSE, base_expr_RData=TRUE, method_cor='spearman', dTOMinFolderTree=FALSE, dTOMpath=NULL,
- verbose=0 ){
+ verbose=0, ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE){
    Hierarchy<- vector(mode='list', length=(length(WithinSimSpecs)+1))
    names(Hierarchy) <- c('base', paste0('within', seq_along(WithinSimSpecs)))
+calculateMEs=FALSE
+if (is.null(ME_data_path) & !(ME_dataInFolderTree) ) calculateMEs=TRUE
 tempClres<-DoClusterFromFilenameArgs(datasets_path=datasets_path, dataset_name=BaseSimSpec$base_dataset_name, network_name=BaseSimSpec$base_network_name,clustering_name=BaseSimSpec$base_clustering_name, method_cor=method_cor,
                              expr_data=base_expr_data, expr_data_path=base_expr_data_path, has_decision=base_has_decision, expr_RData=base_expr_RData, 
-calculateMEs=TRUE, dTOMinFolderTree=dTOMinFolderTree, dTOMpath=dTOMpath)
-   Hierarchy$base<- list(color_labels=tempClres$color_labels, MEs=tempClres$ME_data$eigengenes, base_sim_specs=BaseSimSpec)
-   for (i in seq_along(WithinSimSpecs)){    
+calculateMEs=calculateMEs, dTOMinFolderTree=dTOMinFolderTree, dTOMpath=dTOMpath)
+   if (calculateMEs) MEs=tempClres$ME_data$eigengenes
+   else {if(!is.null(ME_data_path)) MEs<- readRDS(ME_data_path)$eigengenes
+         else { prefix_path=paste0(datasets_path,'/',BaseSimSpec$base_dataset_name,'/networks/',BaseSimSpec$base_network_name,'/clusterings/',BaseSimSpec$base_clustering_name,'/')
+                          MEs<- readRDS(paste0(prefix_path,'ME_data.rds'))$eigengenes
+              }  
+        }
+    
+   Hierarchy$base<- list(color_labels=tempClres$color_labels, MEs=MEs, base_sim_specs=BaseSimSpec)
+   for (i in seq_along(WithinSimSpecs)){   
+    calculateMEs=FALSE
+    if (is.null(ME_data_path) & !(ME_dataInFolderTree) ) calculateMEs=TRUE
     tempClres<-DoClusterFromFilenameArgs(datasets_path=datasets_path, dataset_name=WithinSimSpecs[[i]]$base_dataset_name, network_name=WithinSimSpecs[[i]]$base_network_name,clustering_name=WithinSimSpecs[[i]]$base_clustering_name, method_cor=method_cor,
                              expr_data=base_expr_data,expr_data_path=base_expr_data_path, has_decision=base_has_decision, expr_RData=base_expr_RData, 
-calculateMEs=TRUE, dTOMinFolderTree=dTOMinFolderTree, dTOMpath=dTOMpath)
-        Hierarchy[[paste0('within',i)]]<- list(color_labels=tempClres$color_labels, MEs=tempClres$ME_data$eigengenes, base_sim_specs=WithinSimSpecs[[i]])
+calculateMEs=calculateMEs, dTOMinFolderTree=dTOMinFolderTree, dTOMpath=dTOMpath)
+   if (calculateMEs) MEs=tempClres$ME_data$eigengenes
+   else {if(!is.null(ME_data_path)) MEs<- readRDS(ME_data_path)$eigengenes
+         else { prefix_path=paste0(datasets_path,'/',WithinSimSpecs[[i]]$base_dataset_name,'/networks/',WithinSimSpecs[[i]]$base_network_name,'/clusterings/',WithinSimSpecs[[i]]$base_clustering_name,'/')
+                          MEs<- readRDS(paste0(prefix_path,'ME_data.rds'))$eigengenes
+              }  
+        }
+        Hierarchy[[paste0('within',i)]]<- list(color_labels=tempClres$color_labels, MEs=MEs, base_sim_specs=WithinSimSpecs[[i]])
 }
 return(Hierarchy)
 }
@@ -68,14 +86,16 @@ return(Hierarchy)
 SpecsFiles2Hierarchy<- function(BaseSimName, WithinSimNamesList, datasets_path, dataset_name,
                            base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
-                           method_cor='spearman', dTOMpath=NULL,dTOMinFolderTree=FALSE,  verbose=0) 
+                           method_cor='spearman', dTOMpath=NULL,dTOMinFolderTree=FALSE,  verbose=0, ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE) 
 {
     BaseSimSpec<- ReadSimSpecsFile(BaseSimName, datasets_path, dataset_name)
     WithinSimSpecs<- lapply(WithinSimNamesList, ReadSimSpecsFile, datasets_path, dataset_name)
 
 Hierarchy<- SimSpecs2Hierarchy( BaseSimSpec=BaseSimSpec, WithinSimSpecs=WithinSimSpecs,datasets_path=datasets_path,
                                 base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data,
-                     base_has_decision=base_has_decision, base_expr_RData=base_expr_RData, method_cor=method_cor, verbose=verbose,dTOMinFolderTree=dTOMinFolderTree, dTOMpath=dTOMpath)
+                     base_has_decision=base_has_decision, base_expr_RData=base_expr_RData, method_cor=method_cor, verbose=verbose,dTOMinFolderTree=dTOMinFolderTree, dTOMpath=dTOMpath,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
 return(Hierarchy)
 }
 
@@ -90,18 +110,23 @@ ReadHierarchy<- function(hierarchy_name, datasets_path, dataset_name) {
     prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/hierarchical/')
     loadedH<-readRDS(paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
     return(loadedH)}
+
+
 LayeredFromHierarchy<-function(Hierarchy, datasets_path,
                            base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
                            method_cor='spearman', dTOMpath=NULL,dTOMinFolderTree=FALSE,  
-verbose=0)
+verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE)
 {       
+   print('IN')
    baseAssumedColors<- Hierarchy$base$color_labels
    baseAssumedMEs<- Hierarchy$base$MEs
-   baseSim<-Specs2Sim(specs=Hierarchy$base$base_sim_spec,datasets_path=datasets_path,
+   baseSim<-Specs2Sim(specs=Hierarchy$base$base_sim_specs,datasets_path=datasets_path,
                            base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
                            base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                           method_cor=method_cor,verbose=verbose, dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree)$datExpr  
+                           method_cor=method_cor,verbose=verbose, dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)$datExpr  
    withinAssumedColors<- vector(mode='list', length= length(Hierarchy)-1)
    withinAssumedMEs<- vector(mode='list', length= length(Hierarchy)-1)
    withinSims<- vector(mode='list', length= length(Hierarchy)-1)
@@ -109,10 +134,11 @@ verbose=0)
    for (i in 1:(length(Hierarchy)-1)){
     withinAssumedColors[[i]]<- Hierarchy[[paste0('within',i)]]$color_labels
     withinAssumedMEs[[i]]<- Hierarchy[[paste0('within',i)]]$MEs
-    withinSims[[i]]<- Specs2Sim(specs=Hierarchy[[paste0('within',i)]]$base_sim_spec,datasets_path=datasets_path,
+    withinSims[[i]]<- Specs2Sim(specs=Hierarchy[[paste0('within',i)]]$base_sim_specs,datasets_path=datasets_path,
                            base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
                            base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                           method_cor=method_cor,verbose=verbose, dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree)$datExpr
+                           method_cor=method_cor,verbose=verbose, dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree, ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)$datExpr
      
     if (verbose>0) print(paste0("Done within",i))
     }
@@ -120,17 +146,22 @@ verbose=0)
                                            withinSims, withinAssumedColors, withinAssumedMEs)
 return(layered_sim)
 }
+
+
+
 LayeredFromHierPath<-function(hierarchy_name, datasets_path,dataset_name,
                            base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
-                           method_cor='spearman', dTOMpath=NULL, dTOMinFolderTree=FALSE, verbose=0){
-
+                           method_cor='spearman', dTOMpath=NULL, dTOMinFolderTree=FALSE, verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE){
+    print('IN')
     prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/hierarchical/')
     Hier<-readRDS(paste0(prefix_path,hierarchy_name,'/hierarchy.rds'))
    return(LayeredFromHierarchy(Hierarchy=Hier, datasets_path=datasets_path,
                            base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
                            base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                           method_cor=method_cor,verbose=verbose, dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree)) 
+                           method_cor=method_cor,verbose=verbose, dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree) ) 
 }
 
 SmallGrayModules<- function(GrayIndicator, sim_expr_data, Other_full_clustering, neg_cor_prop,
@@ -189,12 +220,14 @@ RandomGreyModulesFromHier<- function(Hierarchy, datasets_path,MAX_COR,MIN_COR,Ma
                            corpower=1, sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize),
                            base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
-                           method_cor='spearman', dTOMpath=NULL,dTOMinFolderTree=FALSE,  verbose=0){
+                           method_cor='spearman', dTOMpath=NULL,dTOMinFolderTree=FALSE,  verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE){
             
     LS<-LayeredFromHierarchy(Hierarchy=Hierarchy, datasets_path=datasets_path,
                         base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
                         base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                        method_cor=method_cor,dTOMpath=NULL,dTOMinFolderTree=FALSE, verbose=verbose)
+                        method_cor=method_cor,dTOMpath=NULL,dTOMinFolderTree=FALSE, verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
    LS$RGM<- RandomGreyModules(LS$GrayArea, LS$expr_data, neg_cor_prop,
                              MAX_COR, MIN_COR, MaxSubmoduleSize, corpower,
                              sizeProbs) 
@@ -206,12 +239,14 @@ SaveRandomGreyModulesFromHierPath<- function(hierarchy_name, datasets_path,datas
                                             corpower=1, sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize),
                                             base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                                             base_has_decision=FALSE, base_expr_RData=TRUE,
-                                            method_cor='spearman',dTOMpath=NULL,dTOMinFolderTree=FALSE, verbose=0){
+                                            method_cor='spearman',dTOMpath=NULL,dTOMinFolderTree=FALSE, verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE){
     
     LS<-LayeredFromHierPath(hierarchy_name=hierarchy_name, datasets_path=datasets_path,dataset_name=dataset_name,
                             base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
                             base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                            method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose)
+                            method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
    LS$RGM<- RandomGreyModules(LS$GrayArea, LS$expr_data, neg_cor_prop,
                              MAX_COR, MIN_COR, MaxSubmoduleSize, corpower,
                              sizeProbs) 
@@ -280,20 +315,23 @@ EvaluateGreyModSpec<- function(GreySpec=NULL, GreySpecName=NULL, #one must not b
                                dataset_name=NULL, datasets_path=NULL, #if GreySpecFile or hierPath
                                base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null if layered_sim=NULL
                                base_has_decision=FALSE, base_expr_RData=TRUE,
-                               method_cor='spearman',dTOMpath=NULL,dTOMinFolderTree=FALSE,verbose=0){
+                               method_cor='spearman',dTOMpath=NULL,dTOMinFolderTree=FALSE,verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE){
     if(is.null(GreySpec)) if(is.null(GreySpecName)) stop('one of GreySpec or GreySpecName must not be NULL')
                           else  GreySpec<- LoadGreyModulesSpecs(GreySpecName, dataset_name, datasets_path)
     if(is.null(layered_sim)) if(is.null(hier)){ if(is.null(hierarchy_name)) stop('One of: layered_sim, hier, hierarchy_name must not be null')
                                                else layered_sim<- LayeredFromHierPath(hierarchy_name=hierarchy_name, datasets_path=datasets_path,dataset_name=dataset_name,
                                                                    base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, 
                                                                    base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                                                                   method_cor=method_cor,dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree,verbose=verbose)
+                                                                   method_cor=method_cor,dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree,verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
                                               }
                              else
                              layered_sim<- LayeredFromHierarchy(Hierarchy=hier, datasets_path=datasets_path,
                                                                    base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, 
                                                                    base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                                                                   method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose)
+                                                                   method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
     LS<-ApplyGreyModulesSpecs(layered_sim, GreySpec)
     if (is.null(hier)) hier<- ReadHierarchy(hierarchy_name, datasets_path, dataset_name)
     real_net_name<-hier$base$base_sim_specs$base_network_name
@@ -405,12 +443,14 @@ RandomSmallSubModulesFromHierPath<- function(hierarchy_name, datasets_path,datas
                             GreySpecs=NULL, GreySpecsName=NULL,
                             base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
-                           method_cor='spearman',dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree,verbose=0){
+                           method_cor='spearman', dTOMpath= NULL, dTOMinFolderTree=FALSE,verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE){
 
     LS<-LayeredFromHierPath(hierarchy_name=hierarchy_name, datasets_path=datasets_path,dataset_name=dataset_name,
                             base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
                             base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                            method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose)
+                            method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
    if(!is.null( GreySpecs ) )LS<- ApplyGreyModulesSpecs (LS, GreySpecs)
    if(!is.null( GreySpecsName ) )LS<- ApplyGreyModulesSpecsFromFile (LS, GreySpecsName, dataset_name, datasets_path)
     if(!((is.null( GreySpecs )) & (is.null( GreySpecsName )))) {LS$SubMods<-  RandomSmallSubModules(LS$hierarchy$base$color_labels, LS$RGM, neg_cor_prop,
@@ -490,21 +530,24 @@ EvaluateRandModSpec<- function(RSpec=NULL, RSpecName=NULL, #one must not be null
                                dataset_name=NULL, datasets_path=NULL, #if RSpecFile or hierPath
                                base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null if layered_sim=NULL
                                base_has_decision=FALSE, base_expr_RData=TRUE,
-                               method_cor='spearman',dTOMpath=NULL, dTOMinFolderTree=FALSE, verbose=0){
+                               method_cor='spearman',dTOMpath=NULL, dTOMinFolderTree=FALSE, verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE){
     if(is.null(RSpec)) if(is.null(RSpecName)) stop('one of RSpec or RSpecName must not be NULL')
                           else  RSpec<- LoadRandomModulesSpecs(RSpecName, dataset_name, datasets_path)
     if(is.null(layered_sim)) if(is.null(hier)){ if(is.null(hierarchy_name)) stop('One of: layered_sim, hier, hierarchy_name must not be null')
                                                else layered_sim<- LayeredFromHierPath(hierarchy_name=hierarchy_name, datasets_path=datasets_path,dataset_name=dataset_name,
                                                                    base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, 
                                                                    base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                                                                   method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose)
+                                                                   method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
                                               }
                              else
                              layered_sim<- LayeredFromHierarchy(Hierarchy=hier, datasets_path=datasets_path,
                                                                    base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, 
                                                                    base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
-                                                                   method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose)
-    LS<-ApplyRandModulesSpecs(layered_sim, RSpec)
+                                                                   method_cor=method_cor,dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
+    LS<-ApplyRandModulesSpecs(layered_sim, RSpec,FALSE)
     if (is.null(hier)) hier<- ReadHierarchy(hierarchy_name, datasets_path, dataset_name)
     real_net_name<-hier$base$base_sim_specs$base_network_name
     tempc<-cor(LS$SubMods, method=method_cor)
@@ -573,14 +616,16 @@ ReadFinalSimulationSpecs <-function(simulation_name, dataset_name,
 RunFinalSimulationFromSpecs <-function(FinalSpecs, datasets_path,
                                         base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
-                           method_cor='spearman', dTOMpath=NULL,dTOMinFolderTree=FALSE, verbose=0)
+                           method_cor='spearman', dTOMpath=NULL,dTOMinFolderTree=FALSE, verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE)
 {      
     LShier<-ReadHierarchy(hierarchy_name=FinalSpecs$hierarchy_name, datasets_path=datasets_path, dataset_name=FinalSpecs$dataset_name)
     LS<-LayeredFromHierarchy(Hierarchy=LShier, datasets_path=datasets_path,
                            base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data, #one of those must not be null
                            base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
                            method_cor=method_cor, dTOMpath=dTOMpath,dTOMinFolderTree=dTOMinFolderTree,  
-verbose=verbose)
+verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree)
     if(!is.null(FinalSpecs$GraySubmodulesName)) {GrSpecs<-LoadGreyModulesSpecs(GraySubmodulesName=FinalSpecs$GraySubmodulesName, dataset_name=FinalSpecs$dataset_name, datasets_path=datasets_path); 
     LS<-ApplyGreyModulesSpecs(layered_sim=LS, GreySpecs=GrSpecs)}
     if(!is.null(FinalSpecs$RandSubmodulesName)){ RSpecs<-LoadRandomModulesSpecs(RSubmodulesName=FinalSpecs$RandSubmodulesName, dataset_name=FinalSpecs$dataset_name, datasets_path=datasets_path);to_RGM=FALSE;

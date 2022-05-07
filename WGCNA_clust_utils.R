@@ -97,8 +97,11 @@ ClusteringResults.fromAdjacency <- function ( adj_mat, dataExpr, save_steps=FALS
   if (verbose_lvl==4) {print("Supplied moduleEigengenes args: "); print( c2M_args[-c(1,2)]) }
   
   ME_list <- do.call(colors2MEs, c2M_args )
-  
+
   if (verbose_lvl>0) print("Calculated Eigengenes.")
+
+  if (save_steps) {if (verbose_lvl>0) print("Saving ME data...");if (!is.null ( dataset_name )){ saveRDS(ME_list, paste0(prefix_path,'/clusterings/',new_clustering_name,"/ME_data.rds"))} else saveRDS(ME_list,'ME_data.rds');
+    if (verbose_lvl>0) print("Saved module eigengenes and data to ME_data.rds")}
   
   } else{
   ME_list <- "X"}
@@ -134,18 +137,22 @@ prefix_path=paste0(datasets_path,'/',dataset_name,'/networks/',network_name,'/')
 ARGS<- readRDS(paste0(prefix_path,'clusterings/',clustering_name,"/Adj2Clust_args.rds"))
 ARGS$save_final=FALSE
 ARGS$calculateMEs=calculateMEs
+
 if (is.null(expr_data)){ if (is.null(expr_data_path)) stop('expr_data or expr_data_path must not be null') 
                                                       else if (expr_RData) { load(expr_data_path); expr_data<-as.matrix(data.train) } 
                                                                             else  expr_data<- readRDS(expr_data_path)
-                        }
+                      }
+print(ARGS)  
 if (has_decision) expr_data<- expr_data[,-1]
 dtomat<-NULL
 if (!is.null(dTOMpath)) dtomat<- readRDS(dTOMpath)
+print('IN3433')
 if (dTOMinFolderTree) dtomat<- readRDS(paste0(prefix_path,'dissMat.rds'))
 if (is.null(dtomat)) {C<- cor(expr_data, method=method_cor)
 ARGS$adj_mat <-abs(C)^strtoi(network_name)} else {ARGS$adj_mat=1-dtomat;
                                                   ARGS$diss_as_TOM=FALSE}
 ARGS$dataExpr<- expr_data
+print('IN333')
 RESULT<- do.call(ClusteringResults.fromAdjacency, ARGS)
 return(RESULT)
 }

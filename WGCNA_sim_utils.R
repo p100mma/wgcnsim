@@ -169,16 +169,21 @@ BaseClustering2SavedSim<- function(new_sim_name,
                            method_cor='spearman', #for adjaceny matrix
                            dTOMpath=NULL, dTOMinFolderTree=FALSE,  
                            verbose=0, other_named_args=NULL,#simulateDatExpr_fromInput
-                           min_from_perm=FALSE, abs_cor=TRUE, true_grey_frac=0.5 #clust_res2simDEargs
+                           min_from_perm=FALSE, abs_cor=TRUE, true_grey_frac=0.5,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE #clust_res2simDEargs
     ){
-    clres<- DoClusterFromFilenameArgs(datasets_path=datasets_path, dataset_name=base_dataset_name, network_name=base_network_name, clustering_name=base_clustering_name, method_cor=method_cor, expr_data=base_expr_data, expr_data_path=base_expr_data_path, has_decision=base_has_decision, expr_RData=base_expr_RData, calculateMEs=TRUE,dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree)
+    calculateMEs=FALSE
+    if (is.null(ME_data_path) & !(ME_dataInFolderTree) ) calculateMEs=TRUE
+    clres<- DoClusterFromFilenameArgs(datasets_path=datasets_path, dataset_name=base_dataset_name, network_name=base_network_name, clustering_name=base_clustering_name, method_cor=method_cor, expr_data=base_expr_data, expr_data_path=base_expr_data_path, has_decision=base_has_decision, expr_RData=base_expr_RData, calculateMEs=calculateMEs,dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree)
+MEs=NULL
+if (calculateMEs) MEs=clres$ME_data$eigengenes
 if (is.null(base_expr_data)){ if (is.null(base_expr_data_path)) stop('expr_data or expr_data_path must not be null') 
                                                       else if (base_expr_RData) { load(base_expr_data_path); base_expr_data<-as.matrix(data.train) } 
                                                                             else  base_expr_data<- readRDS(base_expr_data_path)
                         }
 if (base_has_decision) base_expr_data<- base_expr_data[,-1]
 C<- cor(base_expr_data, method=method_cor)
-  input_args_list= clust_res2simDEargs(base_expr_data, clres$color_labels, C, clres$ME_data$eigengenes, min_from_perm, abs_cor, true_grey_frac, save_steps=FALSE, save_final=FALSE) 
+  input_args_list= clust_res2simDEargs(dataExpr=base_expr_data, color_labels=clres$color_labels, cormat=C, MEs=MEs, min_from_perm=min_from_perm, abs_cor=abs_cor, true_grey_frac=true_grey_frac, save_steps=FALSE, save_final=FALSE, verbose=verbose, ME_data_path=ME_data_path, ME_dataInFolderTree=ME_dataInFolderTree, datasets_path=datasets_path, dataset_name=base_dataset_name, network_name=base_network_name, clustering_name=base_clustering_name) 
  simul<-simulateDatExpr_fromInput(input_args_list, verbose, other_named_args)
  if (ReorderByReal)
    { print(table(clres$color_labels))
@@ -203,15 +208,24 @@ C<- cor(base_expr_data, method=method_cor)
 Specs2Sim<- function(specs,datasets_path,
                            base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
-                           method_cor='spearman',dTOMpath=NULL, dTOMinFolderTree=FALSE, verbose=0)
-{
-    clres<- DoClusterFromFilenameArgs(datasets_path=datasets_path, dataset_name=specs$base_dataset_name, network_name=specs$base_network_name, clustering_name=specs$base_clustering_name, method_cor=method_cor, expr_data=base_expr_data, expr_data_path=base_expr_data_path, has_decision=base_has_decision, expr_RData=base_expr_RData, calculateMEs=TRUE,dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree)
+                           method_cor='spearman',dTOMpath=NULL, dTOMinFolderTree=FALSE, verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE)
+{       
+    print('IN')
+    calculateMEs=FALSE
+    if (is.null(ME_data_path) & !(ME_dataInFolderTree) ) calculateMEs=TRUE
+    print(specs)
+    print(datasets_path)
+    print(calculateMEs)
+    clres<- DoClusterFromFilenameArgs(datasets_path=datasets_path, dataset_name=specs$base_dataset_name, network_name=specs$base_network_name, clustering_name=specs$base_clustering_name, method_cor=method_cor, expr_data=base_expr_data, expr_data_path=base_expr_data_path, has_decision=base_has_decision, expr_RData=base_expr_RData, calculateMEs=calculateMEs,dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree)
+MEs=NULL
+if (calculateMEs) MEs=clres$ME_data$eigengenes
 if (is.null(base_expr_data)){ if (is.null(base_expr_data_path)) stop('expr_data or expr_data_path must not be null') 
                             else if (base_expr_RData) { load(base_expr_data_path); base_expr_data<-as.matrix(data.train) }                              else  base_expr_data<- readRDS(base_expr_data_path)
                             }
 if (base_has_decision) base_expr_data<- base_expr_data[,-1]
 C<- cor(base_expr_data, method=method_cor)
-  input_args_list= clust_res2simDEargs(base_expr_data, clres$color_labels, C, clres$ME_data$eigengenes, specs$min_from_perm, specs$abs_cor, specs$true_grey_frac, save_steps=FALSE, save_final=FALSE) 
+  input_args_list= clust_res2simDEargs(dataExpr=base_expr_data, color_labels=clres$color_labels,cormat=C, MEs=MEs, min_from_perm=specs$min_from_perm, abs_cor=specs$abs_cor, true_grey_frac=specs$true_grey_frac, save_steps=FALSE, save_final=FALSE, verbose=verbose,ME_data_path=ME_data_path,ME_dataInFolderTree=ME_dataInFolderTree,datasets_path=datasets_path, dataset_name=specs$base_dataset_name,network_name=specs$base_network_name,clustering_name=specs$base_clustering_name) 
  if (is.null(specs$other_named_args))
  simul<-simulateDatExpr_fromInput(input_args_list, verbose)
  else
@@ -233,13 +247,15 @@ ReadSimSpecsFile <- function(sim_name, datasets_path,dataset_name)
 SpecsFile2Sim<- function(sim_name,datasets_path,dataset_name,
                            base_expr_data_path=NULL, base_expr_data=NULL, #one of those must not be null
                            base_has_decision=FALSE, base_expr_RData=TRUE,
-                           method_cor='spearman',dTOMpath=NULL, dTOMinFolderTree=FALSE, verbose=0)
+                           method_cor='spearman',dTOMpath=NULL, dTOMinFolderTree=FALSE, verbose=0,ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE)
 {
     specs<- ReadSimSpecsFile(sim_name, datasets_path,dataset_name)
     return(Specs2Sim(specs=specs,datasets_path=datasets_path,
-                     expr_data_path=base_expr_data_path, expr_data=base_expr_data,
-                           has_decision=base_has_decision, expr_RData=base_expr_RData,
-                           method_cor=method_cor,dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree, verbose=verbose))
+                     base_expr_data_path=base_expr_data_path, base_expr_data=base_expr_data,
+                           base_has_decision=base_has_decision, base_expr_RData=base_expr_RData,
+                           method_cor=method_cor,dTOMpath=dTOMpath, dTOMinFolderTree=dTOMinFolderTree, verbose=verbose,ME_data_path=ME_data_path,
+                                ME_dataInFolderTree=ME_dataInFolderTree))
 }
 fromInput_simulate2ClusteringResults<- function(input_args_list,other_named_args, real_clustering_result,
                                                 method_cor="spearman", adj_power=5, 
