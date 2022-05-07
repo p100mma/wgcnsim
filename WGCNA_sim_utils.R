@@ -30,7 +30,7 @@ simulateDatExpr_fromInput<- function(input_args_list, verbose=0, other_named_arg
     "Error: put 'verbose' seperately as argument, not as a member of input_args_list or other_named_args")
   args_<- c(input_args_list, list(verbose= verbose))
   args_<- c(args_, other_named_args)
-  if (verbose>0) {print("Calling simulateDatExpr with given args: "); print(args_)}
+  if (verbose>0) {print("Calling simulateDatExpr with given args: "); print(args_[names(args_)!='geneMeans' & names(args_)!='eigengenes' ])}
   sim_result<-do.call(simulateDatExpr, args_)
   return(list(sim_result=sim_result, simulation_call_args=args_))
 }
