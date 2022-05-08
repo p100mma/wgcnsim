@@ -217,4 +217,37 @@ ClusteringResults.fromSimilarity<- function(sim_mat, dataExpr, save_steps=FALSE,
   
   return(final_results)
 }
-  
+MclusterCoef <-function(adjMat, mc.cores=10)
+#parallel version of WGCNA clusterCoef
+{
+    checkAdjMat(adjMat)
+    diag(adjMat) = 0
+    nNodes = dim(adjMat)[[1]]
+   # original 
+   # computeLinksInNeighbors <- function(x, imatrix) {
+    #    x %*% imatrix %*% x
+    #}
+    
+    computeLinksInNeighbors <- function(i, imatrix) {
+        imatrix[i,] %*% imatrix %*% imatrix[i,]
+    }
+    nolinksNeighbors <- c(rep(-666, nNodes))
+    total.edge <- c(rep(-666, nNodes))
+    maxh1 = max(as.dist(adjMat))
+    minh1 = min(as.dist(adjMat))
+    if (maxh1 > 1 | minh1 < 0) 
+        stop(paste("The adjacency matrix contains entries that are larger than 1 or smaller than 0: max =", 
+            maxh1, ", min =", minh1))
+   # original 
+   # nolinksNeighbors <- apply(adjMat, 1, computeLinksInNeighbors, 
+    #    imatrix = adjMat)
+    nolinksNeighbors<- unlist(parallel::mclapply(1:nrow(adjMat), computeLinksInNeighbors, adjMat, mc.preschedule=FALSE, mc.cores=mc.cores))
+    print(nolinksNeighbors)
+    plainsum <- apply(adjMat, 1, sum)
+    squaresum <- apply(adjMat^2, 1, sum)
+    total.edge = plainsum^2 - squaresum
+    CChelp = rep(-666, nNodes)
+    CChelp = ifelse(total.edge == 0, 0, nolinksNeighbors/total.edge)
+    CChelp
+}
+
