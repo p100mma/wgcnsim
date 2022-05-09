@@ -242,7 +242,6 @@ MclusterCoef <-function(adjMat, mc.cores=10)
    # nolinksNeighbors <- apply(adjMat, 1, computeLinksInNeighbors, 
     #    imatrix = adjMat)
     nolinksNeighbors<- unlist(parallel::mclapply(1:nrow(adjMat), computeLinksInNeighbors, adjMat, mc.preschedule=FALSE, mc.cores=mc.cores))
-    print(nolinksNeighbors)
     plainsum <- apply(adjMat, 1, sum)
     squaresum <- apply(adjMat^2, 1, sum)
     total.edge = plainsum^2 - squaresum
