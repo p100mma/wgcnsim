@@ -121,13 +121,20 @@ colors2props <- function( clabels, distinct_ordered_colors=NULL,true_grey_frac=0
   return(module_props)
 }
 
-clust_res2simDEargs <- function(dataExpr, color_labels, cormat, MEs, 
+clust_res2simDEargs <- function(dataExpr, color_labels, cormat, MEs=NULL, 
                                 min_from_perm=FALSE, abs_cor=TRUE,
                                 true_grey_frac=0.5, 
-                                save_steps=FALSE,save_final=TRUE, verbose=0,  ...){
+                                save_steps=FALSE,save_final=TRUE, verbose=0,
+                                ME_data_path=NULL,
+                                ME_dataInFolderTree=FALSE, datasets_path=NULL,
+                                dataset_name=NULL, network_name=NULL, clustering_name=NULL ){
   #get the input arguments to the simulateDatExpr from 
   #expression data (dataExpr) and results of clustering by WGCNA package
-  #MEs are eigengenes
+  #MEs are eigengenes, if NULL, then either:
+  #     - ME_data_path must have .rds file with ME_data (result of moduleEigengenes from WGCNA),
+  #     - ME_dataInFolderTree must be TRUE, and arguments datasets_path,dataset_name,network_name,
+  #       ... and clustering_name must lead to ME_data.rds, : 
+  #           datasets_path/dataset_name/networks/network_name/clusterings/clustering_name/ME_data.rds
   #cormat is original correlation matrix from which clustering was derived
   #color_labels are labels of genes produced by labels2colors from WGCNA package
   #if min_from_perm is TRUE, estimated minimal correlation in each module is the largest of 
@@ -136,7 +143,6 @@ clust_res2simDEargs <- function(dataExpr, color_labels, cormat, MEs,
   #true_grey_frac determines the proportion of "true grey genes", last entry of modProportions argument to...
   #   ...simulateDatExpr
   #if abs_cor==TRUE, then returned min and max relates to absolute values of correlations
-  #further arguments (...) are delivered to cor (during minCor maxCor computations)
   #
   #returns a list of arguments named as correspoding formals in simulateDatExpr
   #list contains vectors of minimal and maximal correlations, gene means, eigengenes,
@@ -146,13 +152,22 @@ clust_res2simDEargs <- function(dataExpr, color_labels, cormat, MEs,
   # so in that case geneMeans must be modified accordingly in future call of simulateDatExpr
   err_check<- ncol_check(dataExpr, cormat, "expression data", "correlation matrix")
   if (!err_check$status) stop(err_check$msg)
+  if (is.null(MEs)) if(!is.null(ME_data_path)) MEs<- readRDS(ME_data_path)$eigengenes
+                    else { if(!ME_dataInFolderTree) stop(" if MEs=NULL, then either:
+       - ME_data_path must have .rds file with ME_data (result of moduleEigengenes from WGCNA),
+       - ME_dataInFolderTree must be TRUE, and arguments datasets_path,dataset_name,network_name,
+         ... and clustering_name must lead to ME_data.rds, : 
+             datasets_path/dataset_name/networks/network_name/clusterings/clustering_name/ME_data.rds")
+                          prefix_path=paste0(datasets_path,'/',dataset_name,'/networks/',network_name,'/clusterings/',clustering_name,'/')
+                          MEs<- readRDS(paste0(prefix_path,'ME_data.rds'))$eigengenes
+                         }
   MEnames <- names(MEs)
   colornames<- sub(".*ME", "", MEnames)
   colornames<- colornames[ colornames!="grey"]     #skip grey module (independent genes)
   
   
   if (verbose>0) print("Calculating min and max correlations.")
-  cor_par_list <- colors2sim_cor_params(colornames, dataExpr, color_labels, MEs,abs_cor,min_from_perm,verbose, ... )
+  cor_par_list <- colors2sim_cor_params(colornames, dataExpr, color_labels, MEs,abs_cor,min_from_perm,verbose  )
   if (verbose>0) print("Done calculations of min and max correlations.")
   
   if(save_steps) {if (verbose>0) print("Saving min and max correlations..."); saveRDS(cor_par_list, "cor_pars.rds")
