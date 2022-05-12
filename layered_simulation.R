@@ -282,7 +282,7 @@ LoadGreyModulesSpecs<- function(GraySubmodulesName, dataset_name, datasets_path)
 SaveGreyModulesSpecs<- function(GreySpecs, GraySubmodulesName, dataset_name, datasets_path){
     prefix_path=paste0(datasets_path,'/',dataset_name,'/simulations/GraySubmodules/')
     dir.create(paste0(prefix_path, GraySubmodulesName), showWarnings=FALSE, recursive=TRUE)
-    saveRDS(GraySpecs,paste0(prefix_path,GraySubmodulesName,'/Specs.rds'))
+    saveRDS(GreySpecs,paste0(prefix_path,GraySubmodulesName,'/Specs.rds'))
 }
  
 DefineGreyModulesSpec <-function(NAME, dataset_name, hierarchy_name,neg_cor_prop,  MAX_COR, MIN_COR,MaxSubmoduleSize,corpower=1,
