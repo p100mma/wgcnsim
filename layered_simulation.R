@@ -288,7 +288,7 @@ SaveGreyModulesSpecs<- function(GreySpecs, GraySubmodulesName, dataset_name, dat
 DefineGreyModulesSpec <-function(NAME, dataset_name, hierarchy_name,neg_cor_prop,  MAX_COR, MIN_COR,MaxSubmoduleSize,corpower=1,
                                 sizeProbs=rep( 1/MaxSubmoduleSize,MaxSubmoduleSize), save_specs=FALSE,datasets_path=NULL)
 {
-    GraySpecs<- list(NAME=NAME,
+    GreySpecs<- list(NAME=NAME,
                      base_dataset=dataset_name,
                      base_hierarchy=hierarchy_name,
                      neg_cor_prop=neg_cor_prop,
